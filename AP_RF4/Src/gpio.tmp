@@ -1,0 +1,214 @@
+
+#n/** Configure pins as #n #t#t #t* Analog #n #t#t #t* Input #n #t#t #t* Output#n #t#t #t* EVENT_OUT#n #t#t #t* EXTI#n #t#t #t* Free pins are configured automatically as Analog (this feature is enabled through #n #t#t #t* the Code Generation settings)
+*/
+static void MX_GPIO_Init(void)
+{
+#n
+#tGPIO_InitTypeDef GPIO_InitStruct;
+#n#t/* GPIO Ports Clock Enable */
+#t__HAL_RCC_GPIOE_CLK_ENABLE();
+#t__HAL_RCC_GPIOI_CLK_ENABLE();
+#t__HAL_RCC_GPIOC_CLK_ENABLE();
+#t__HAL_RCC_GPIOF_CLK_ENABLE();
+#t__HAL_RCC_GPIOH_CLK_ENABLE();
+#t__HAL_RCC_GPIOA_CLK_ENABLE();
+#t__HAL_RCC_GPIOB_CLK_ENABLE();
+#t__HAL_RCC_GPIOG_CLK_ENABLE();
+#t__HAL_RCC_GPIOD_CLK_ENABLE();
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(SPI3_rf_power_onoff_GPIO_Port, SPI3_rf_power_onoff_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOF, SPI5_rf_io_reset_Pin|SPI5_rf_io_vreg_Pin|SPI5_rf_tx_Pin|SPI5_rf_rfoff_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|SPI5_rf_io_fifo_Pin|SPI5_rf_cs_Pin|SPI1_rf_io_fifo_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOF, SPI5_rf_power_onoff_Pin|SPI1_rf_power_onoff_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOA, SPI1_rf_cs_Pin|SPI3_rf_cs_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOC, SPI1_rf_io_vreg_Pin|SPI1_rf_io_reset_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOB, SPI1_rf_tx_Pin|SPI1_rf_rfoff_Pin|SPI4_rf_io_fifo_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOE, Watch_dog_io_Pin|SPI4_rf_cs_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(SPI4_rf_io_vreg_GPIO_Port, SPI4_rf_io_vreg_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOH, SPI4_rf_io_reset_Pin|SPI4_rf_power_onoff_Pin|SPI3_rf_io_vreg_Pin|SPI3_rf_io_reset_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOH, SPI4_rf_tx_Pin|SPI4_rf_rfoff_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOD, GPRS_pwoer_onoff_Pin|SPI4_led_crc_error_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOG, general_led_1_Pin|general_led_2_Pin|general_led_3_Pin|general_led_4_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|general_led_5_Pin|SPI4_led_rf_send_Pin|SPI1_led_crc_error_Pin|SPI1_led_rf_send_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|SPI5_led_crc_error_Pin|SPI5_led_rf_send_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(general_led_6_GPIO_Port, general_led_6_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOI, SPI3_rf_tx_Pin|SPI3_rf_rfoff_Pin|SPI3_rf_io_fifo_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPRS_powerkey_GPIO_Port, GPRS_powerkey_Pin, GPIO_PIN_SET);
+#n#t/*Configure GPIO pin Output Level */
+#tHAL_GPIO_WritePin(GPIOI, SPI3_led_crc_error_Pin|SPI3_led_rf_send_Pin, GPIO_PIN_RESET);
+#n#t/*Configure GPIO pins : PE2 PE3 PE4 PE5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PE6 PE7 PE8 PE10 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PE0 PE1 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_10 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_0|GPIO_PIN_1;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PI8 PI9 PI10 PI11 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PI4 PI5 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_4|GPIO_PIN_5;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : SPI3_rf_power_onoff_Pin */
+#tGPIO_InitStruct.Pin = SPI3_rf_power_onoff_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(SPI3_rf_power_onoff_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PC14 PC15 PC0 PC1 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PC2 PC3 PC8 PC9 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_8|GPIO_PIN_9;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI5_rf_io_reset_Pin SPI5_rf_io_vreg_Pin SPI5_rf_tx_Pin SPI5_rf_rfoff_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t SPI5_rf_io_fifo_Pin SPI5_rf_cs_Pin SPI1_rf_io_fifo_Pin */
+#tGPIO_InitStruct.Pin = SPI5_rf_io_reset_Pin|SPI5_rf_io_vreg_Pin|SPI5_rf_tx_Pin|SPI5_rf_rfoff_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|SPI5_rf_io_fifo_Pin|SPI5_rf_cs_Pin|SPI1_rf_io_fifo_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI5_rf_io_fifop_Pin SPI1_rf_io_fifop_Pin */
+#tGPIO_InitStruct.Pin = SPI5_rf_io_fifop_Pin|SPI1_rf_io_fifop_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI5_rf_power_onoff_Pin SPI1_rf_power_onoff_Pin */
+#tGPIO_InitStruct.Pin = SPI5_rf_power_onoff_Pin|SPI1_rf_power_onoff_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PA0 PA1 PA2 PA3 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PA8 PA9 PA10 PA11 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PA12 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_12;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PH2 PH3 PH4 PH5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PH10 PH11 PH12 PH15 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_15;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI1_rf_cs_Pin SPI3_rf_cs_Pin */
+#tGPIO_InitStruct.Pin = SPI1_rf_cs_Pin|SPI3_rf_cs_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI1_rf_io_vreg_Pin SPI1_rf_io_reset_Pin */
+#tGPIO_InitStruct.Pin = SPI1_rf_io_vreg_Pin|SPI1_rf_io_reset_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI1_rf_tx_Pin SPI1_rf_rfoff_Pin SPI4_rf_io_fifo_Pin */
+#tGPIO_InitStruct.Pin = SPI1_rf_tx_Pin|SPI1_rf_rfoff_Pin|SPI4_rf_io_fifo_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PB2 PB12 PB13 PB14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PB15 PB3 PB4 PB5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PB8 PB9 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_15|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_8|GPIO_PIN_9;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PF14 PF15 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PG0 PG1 PG8 PG14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PG15 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_8|GPIO_PIN_14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_15;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : Watch_dog_io_Pin SPI4_rf_cs_Pin */
+#tGPIO_InitStruct.Pin = Watch_dog_io_Pin|SPI4_rf_cs_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : SPI4_rf_io_vreg_Pin */
+#tGPIO_InitStruct.Pin = SPI4_rf_io_vreg_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(SPI4_rf_io_vreg_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : SPI4_rf_io_fifop_Pin */
+#tGPIO_InitStruct.Pin = SPI4_rf_io_fifop_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(SPI4_rf_io_fifop_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI4_rf_io_reset_Pin SPI4_rf_power_onoff_Pin SPI3_rf_io_vreg_Pin SPI3_rf_io_reset_Pin */
+#tGPIO_InitStruct.Pin = SPI4_rf_io_reset_Pin|SPI4_rf_power_onoff_Pin|SPI3_rf_io_vreg_Pin|SPI3_rf_io_reset_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI4_rf_tx_Pin SPI4_rf_rfoff_Pin */
+#tGPIO_InitStruct.Pin = SPI4_rf_tx_Pin|SPI4_rf_rfoff_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : GPRS_pwoer_onoff_Pin */
+#tGPIO_InitStruct.Pin = GPRS_pwoer_onoff_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPRS_pwoer_onoff_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : PD11 PD12 PD13 PD14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PD15 PD0 PD2 PD3 #n#t#t#t#t#t#t#t#t#t#t#t#t#t PD4 */
+#tGPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_2|GPIO_PIN_3 #n#t#t#t#t#t#t#t#t#t#t#t#t#t|GPIO_PIN_4;
+#tGPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : general_led_1_Pin general_led_2_Pin general_led_3_Pin general_led_4_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t general_led_5_Pin general_led_6_Pin SPI4_led_rf_send_Pin SPI1_led_crc_error_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t SPI1_led_rf_send_Pin SPI5_led_crc_error_Pin SPI5_led_rf_send_Pin */
+#tGPIO_InitStruct.Pin = general_led_1_Pin|general_led_2_Pin|general_led_3_Pin|general_led_4_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|general_led_5_Pin|general_led_6_Pin|SPI4_led_rf_send_Pin|SPI1_led_crc_error_Pin #n#t#t#t#t#t#t#t#t#t#t#t#t#t|SPI1_led_rf_send_Pin|SPI5_led_crc_error_Pin|SPI5_led_rf_send_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI3_rf_tx_Pin SPI3_rf_rfoff_Pin SPI3_rf_io_fifo_Pin */
+#tGPIO_InitStruct.Pin = SPI3_rf_tx_Pin|SPI3_rf_rfoff_Pin|SPI3_rf_io_fifo_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+#tHAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : SPI3_rf_io_fifop_Pin */
+#tGPIO_InitStruct.Pin = SPI3_rf_io_fifop_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+#tGPIO_InitStruct.Pull = GPIO_NOPULL;
+#tHAL_GPIO_Init(SPI3_rf_io_fifop_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : GPRS_powerkey_Pin */
+#tGPIO_InitStruct.Pin = GPRS_powerkey_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+#tGPIO_InitStruct.Pull = GPIO_PULLDOWN;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPRS_powerkey_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pin : SPI4_led_crc_error_Pin */
+#tGPIO_InitStruct.Pin = SPI4_led_crc_error_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(SPI4_led_crc_error_GPIO_Port, &GPIO_InitStruct);
+#n#t/*Configure GPIO pins : SPI3_led_crc_error_Pin SPI3_led_rf_send_Pin */
+#tGPIO_InitStruct.Pin = SPI3_led_crc_error_Pin|SPI3_led_rf_send_Pin;
+#tGPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+#tGPIO_InitStruct.Pull = GPIO_PULLUP;
+#tGPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+#tHAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
+#n#t/* EXTI interrupt init*/
+#tHAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0);
+#tHAL_NVIC_EnableIRQ(EXTI2_IRQn);#n
+#tHAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
+#tHAL_NVIC_EnableIRQ(EXTI4_IRQn);#n
+#tHAL_NVIC_SetPriority(EXTI15_10_IRQn, 1, 0);
+#tHAL_NVIC_EnableIRQ(EXTI15_10_IRQn);#n#n
+}
+#n
