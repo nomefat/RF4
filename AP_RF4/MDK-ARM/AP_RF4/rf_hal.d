@@ -38,3 +38,4 @@ ap_rf4\rf_hal.o: ..\User\typedef_struct.h
 ap_rf4\rf_hal.o: ..\User\RF4\rf_hal.h
 ap_rf4\rf_hal.o: ..\User\RF4\hal_cc2520.h
 ap_rf4\rf_hal.o: ..\User\Debug_uart\debug_uart.h
+ap_rf4\rf_hal.o: ..\User\Ap_param\ap_param.h

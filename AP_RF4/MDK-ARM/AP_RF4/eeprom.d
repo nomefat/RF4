@@ -34,3 +34,7 @@ ap_rf4\eeprom.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h
 ap_rf4\eeprom.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 ap_rf4\eeprom.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 ap_rf4\eeprom.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
+ap_rf4\eeprom.o: ../Inc/eeprom.h
+ap_rf4\eeprom.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+ap_rf4\eeprom.o: ..\User\Ap_param\ap_param.h
+ap_rf4\eeprom.o: ..\User\ToN1_uart\to_n1.h

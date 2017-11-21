@@ -4,6 +4,8 @@
 #include "math.h"
 #include "gprs_hal.h"
 #include "debug_uart.h"
+#include "ap_param.h"
+
 
 
 typedef struct{
@@ -49,6 +51,7 @@ char gprs_debug_buff[256];
 
 char at_cmd_conn[50];
 
+extern struct_ap_param ap_param;
 
 struct struct_gprs_stat{
 	char ati_ok;
@@ -59,6 +62,7 @@ struct struct_gprs_stat{
 		char connect_ok;
 		int connect_fail_times;	
 		int send_no_timeout;            //发送后直接没有收到 > 超时
+		int send_no_times;
 		int gprs_send_error_timeout;   // tcp发送数据没有成功计数	
 	}con_client[3];
 	char send_data_id;       //记录那个链接 发送数据
@@ -133,7 +137,7 @@ char *gprs_str_cmd[] = {
 
 
 extern UART_HandleTypeDef huart2;
-
+void send_gprs_200_();
 
 /*
  * 功能：往队列中写入一个字节
@@ -281,7 +285,7 @@ void gprs_at_tcp_conn(int num,unsigned long ip,unsigned short port)
 {
 
 	memset(at_cmd_conn,0,50);
-	sprintf(at_cmd_conn,"AT+QIOPEN=%d,\"TCP\",\"%d.%d.%d.%d\",%d\r\n",num,ip>>24,(ip>>16)&0xff,(ip>>8)&0xff,ip&0xff,port);
+	sprintf(at_cmd_conn,"AT+QIOPEN=%d,\"TCP\",\"%d.%d.%d.%d\",%d\r\n",num,ip&0xff,(ip>>8)&0xff,(ip>>16)&0xff,ip>>24,port);
 	//sprintf(at_cmd_conn,"AT+QIOPEN=0,\"TCP\",\"219.239.83.74\",40005\r\n");
 	gprs_uart_send_string(at_cmd_conn);
 
@@ -390,7 +394,7 @@ int gprs_str_cmd_handle(char *pstr)
 				HAL_UART_Transmit_DMA(&huart2,gprs_stat.send_data_buff,gprs_stat.send_data_num);		
 				gprs_stat.send_data_id = -1;	
 				gprs_stat.send_data_num = 0;
-
+				gprs_stat.con_client[0].send_no_times = 0;
 			
 				if(gprs_stat.send_data_id == 0)
 				{
@@ -627,6 +631,8 @@ void gprs_data_handle(void)
 			insert_to_n1_buff(&gprs_data_buff[i],p_n1_data_head->length+12,AP_GPRS_SERVER_DATA);
 			i += p_n1_data_head->length+12;
 			begin += p_n1_data_head->length+12;
+			if(p_n1_data_head->data[0] == 0x55)
+				send_gprs_200_();
 		}
 		else if(gprs_data_buff[i] == '\r' || gprs_data_buff[i] == '\n' ||gprs_data_buff[i] == '>')
 		{
@@ -723,7 +729,7 @@ void gprs_main_call()
 	{
 		if(send_cmd_timeout-- <= 0)
 		{
-			gprs_at_tcp_conn(0,(219<<24)|(239<<16)|(83<<8)|74,40005);      //发送一次命令后  20秒超时后才可以再次发送
+			gprs_at_tcp_conn(0,ap_param.gprs_server_ip,ap_param.gprs_server_port);      //发送一次命令后  20秒超时后才可以再次发送
 			send_cmd_timeout = 20;
 			send_cmd_times++;
 			if(send_cmd_times>6)       //连续链接了6次 都没有成功
@@ -747,6 +753,20 @@ void gprs_main_call()
 			else
 			{
 				gprs_stat.con_client[0].send_no_timeout = 10;
+				gprs_stat.con_client[0].send_no_times++;
+				if(gprs_stat.con_client[0].send_no_times>3)  //发送没有响应
+				{
+					gprs_stat.reboot_flag = GPRS_REBOOT_SETP0;
+					gprs_stat.ati_ok = 0;
+					gprs_stat.cgreg_ok = 0;
+					gprs_stat.creg_ok = 0;
+					gprs_stat.con_client[0].connect_fail_times = 0;
+					gprs_stat.con_client[0].connect_ok = 0;
+					gprs_stat.con_client[0].gprs_send_error_timeout = 0;
+					gprs_stat.con_client[0].send_no_timeout = 0;
+					gprs_stat.con_client[0].send_no_times = 0;
+					return;
+				}
 				memset(at_cmd_conn,0,50);
 				sprintf(at_cmd_conn,AT_CMD_AT_SEND,0,gprs_stat.send_data_num);
 				gprs_uart_send_string(at_cmd_conn);
@@ -755,6 +775,10 @@ void gprs_main_call()
 		else
 		{
 			get_link_stat++;
+			if(get_link_stat == 15)
+			{	
+				gprs_uart_send_string(AT_CMD_AT_CSQ);				
+			}
 			if(get_link_stat>30)
 			{
 				get_link_stat = 0;
@@ -775,7 +799,7 @@ void send_gprs_data(void *pdata,int len)
 	memcpy(n1_to_server_data,pdata,len);
 	gprs_stat.send_data_id = 0;
 	gprs_stat.send_data_buff = n1_to_server_data;
-	gprs_stat.send_data_num = 200;	
+	gprs_stat.send_data_num = len;	
 }
 
 
@@ -789,7 +813,7 @@ void send_gprs_200_()
 
 char* make_gprs_stat()
 {
-	sprintf(gprs_debug_buff,"gprs:ati=%d creg=%d cgreg=%d tcp=%d \r\n",gprs_stat.ati_ok,gprs_stat.creg_ok,gprs_stat.cgreg_ok,gprs_stat.con_client[0].connect_ok);
+	sprintf(gprs_debug_buff,"gprs:ati=%d creg=%d cgreg=%d tcp=%d csq=%d\r\n",gprs_stat.ati_ok,gprs_stat.creg_ok,gprs_stat.cgreg_ok,gprs_stat.con_client[0].connect_ok,gprs_stat.csq);
 	return gprs_debug_buff;
 }
 

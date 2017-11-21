@@ -38,3 +38,7 @@ ap_rf4\from_n1.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ap_rf4\from_n1.o: ..\User\Ap_param\ap_param.h
 ap_rf4\from_n1.o: ..\User\ToN1_uart\to_n1.h
 ap_rf4\from_n1.o: ..\User\RF4\rf_hal.h
+ap_rf4\from_n1.o: ../Inc/eeprom.h
+ap_rf4\from_n1.o: ../Inc/flash.h
+ap_rf4\from_n1.o: ../Inc/from_n1.h
+ap_rf4\from_n1.o: ../Inc/update_s_rp.h

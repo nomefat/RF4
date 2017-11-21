@@ -258,7 +258,7 @@ typedef struct _SNP_STATE_PACKET_SENSOR_t
 	u8_t        uiQuality;			// 0x16 -   链路质量  + 1bit CRC
 	
 	struct{							// 0x17
-			u8_t	uiGrade:2	;	// 检测器跟的同步包级别 与上一级的级别一致		
+			u8_t	uiGrade:3	;	// 检测器跟的同步包级别 与上一级的级别一致		
 			u8_t uiChannel:5;		
 		 };
 	

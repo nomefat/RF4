@@ -39,3 +39,4 @@ ap_rf4\gprs_comm.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ap_rf4\gprs_comm.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 ap_rf4\gprs_comm.o: ..\User\GPRS\gprs_hal.h
 ap_rf4\gprs_comm.o: ..\User\Debug_uart\debug_uart.h
+ap_rf4\gprs_comm.o: ..\User\Ap_param\ap_param.h

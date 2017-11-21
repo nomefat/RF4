@@ -3,23 +3,11 @@
 #include "ap_param.h"
 #include "to_n1.h"
 #include "rf_hal.h"
+#include "eeprom.h"
+#include "flash.h"
+#include "from_n1.h"
+#include "update_s_rp.h"
 
-
-
-
-
-
-#pragma pack(1)
-
-typedef struct _ap_n1_protocol
-{
-	unsigned short head;
-	unsigned int packet_syn;
-	unsigned char lengh;
-	unsigned char cmd;
-	unsigned char data[1];
-	
-}struct_ap_n1_protocol;
 
 
 uint8_t from_n1_data[2][256]={0};
@@ -31,7 +19,8 @@ extern struct_sensor_rp_param sensor_rp_param ;
 extern uint8_t send_to_n1_ack[];
 extern struct_ap_param ap_param;
 extern struct struct_gprs_stat gprs_stat;
-	
+extern	struct_ee_task ee_task;
+
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi3;
 extern SPI_HandleTypeDef hspi4;
@@ -48,6 +37,17 @@ void n1_send_2g_data(struct_ap_n1_protocol *ptr);
 void n1_set_s_param(struct_ap_n1_protocol *ptr);
 void n1_set_rp_param(struct_ap_n1_protocol *ptr);
 void n1_get_2g_stat(struct_ap_n1_protocol *ptr);
+
+extern uint8_t ee_data_write[256];
+
+
+extern uint8_t ap_param_write_flash_flag;
+
+
+extern void receive_rp_sensor_firmware(struct_ap_n1_protocol *ptr,int who);
+
+
+
 
 
 
@@ -70,21 +70,26 @@ void from_n1_data_handle(void)
 	if(ptr->head != 0x55aa)
 		return;
 	
+	
+	HAL_GPIO_TogglePin(general_led_6_GPIO_Port,general_led_6_Pin);
+	
 	switch(ptr->cmd)
 	{
 		case N1_ACK:send_to_n1_data[0] = 0;break;
 		case N1_GET_AP_PARAM: n1_get_ap_pram(ptr);break;
 		case N1_SET_AP_PARAM: n1_set_ap_pram(ptr);break;
-		case N1_SEND_AP_FIRMWARE: n1_send_firmware(ptr,N1_SEND_AP_FIRMWARE);break;
-		case N1_SEND_RP_FIRMWARE: n1_send_firmware(ptr,N1_SEND_RP_FIRMWARE);break;		
-		case N1_SEND_S_FIRMWARE: n1_send_firmware(ptr,N1_SEND_S_FIRMWARE);break;
+		case N1_SEND_AP_FIRMWARE: //n1_send_firmware(ptr,N1_SEND_AP_FIRMWARE);break;
+		case N1_SEND_RP_FIRMWARE: send_to_n1_ack[0] = 0xaa;receive_rp_sensor_firmware(ptr,N1_SEND_RP_FIRMWARE);break;		
+		case N1_SEND_S_FIRMWARE: send_to_n1_ack[0] = 0xaa;receive_rp_sensor_firmware(ptr,N1_SEND_S_FIRMWARE);break;
 		case N1_SEND_2G_DATA: n1_send_2g_data(ptr);break;
 		case N1_SET_S_PARAM: n1_set_s_param(ptr);break;
 		case N1_SET_RP_PARAM: n1_set_rp_param(ptr);break;		
 		case N1_GET_2G_STAT: n1_get_2g_stat(ptr);break;
+		case N1_SET_SENSOR_UPDATE_ENABLE:enable_sensor_update();break;
+		case N1_SET_RP_UPDATE_ENABLE:enable_rp_update();break;
 		default : break;
 	}
-	
+
 	
 }
 
@@ -151,12 +156,12 @@ void n1_set_ap_pram(struct_ap_n1_protocol *ptr)
 	
 	memcpy(&(ap_param.band_id),&(ptr->data[8]),sizeof(ap_param)-8);
 	send_to_n1_ack[0] = 0xaa;
+
+	ap_param_write_flash_flag = 1;	
+
 }
 
-void n1_send_firmware(struct_ap_n1_protocol *ptr,int who)
-{
-	
-}
+
 
 void n1_send_2g_data(struct_ap_n1_protocol *ptr)
 {
@@ -178,8 +183,9 @@ void n1_set_rp_param(struct_ap_n1_protocol *ptr)
 
 void n1_get_2g_stat(struct_ap_n1_protocol *ptr)
 {
-	insert_to_n1_buff((uint8_t*)&gprs_stat,5,AP_GPRS_STAT);	
 	send_to_n1_ack[0] = 0xaa;	
+	insert_to_n1_buff((uint8_t*)&gprs_stat,5,AP_GPRS_STAT);	
+	
 }
 
 

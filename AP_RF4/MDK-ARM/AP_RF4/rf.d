@@ -40,3 +40,7 @@ ap_rf4\rf.o: ..\User\Ap_param\ap_param.h
 ap_rf4\rf.o: ..\User\RF4\rf_hal.h
 ap_rf4\rf.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ap_rf4\rf.o: ..\User\ToN1_uart\to_n1.h
+ap_rf4\rf.o: ../Inc/eeprom.h
+ap_rf4\rf.o: ../Inc/debug.h
+ap_rf4\rf.o: ../Inc/flash.h
+ap_rf4\rf.o: ../Inc/update_s_rp.h

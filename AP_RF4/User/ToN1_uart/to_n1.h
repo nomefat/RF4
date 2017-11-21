@@ -21,6 +21,12 @@
 
 #define N1_GET_2G_STAT       12
 
+#define N1_SET_SENSOR_UPDATE_ENABLE 13
+
+#define N1_SET_RP_UPDATE_ENABLE 14
+
+
+
 
 #define AP_RF_DATA    				 50
 #define AP_NOP        				 51
@@ -28,7 +34,8 @@
 #define AP_AP_PARAM   				 53
 #define AP_GPRS_STAT           54
 
-
+#define AP_SEND_RP_FIRMWARE    57
+#define AP_SEND_S_FIRMWARE    58
 
 int insert_to_n1_buff(uint8_t *data,uint8_t len,uint8_t cmd);
 

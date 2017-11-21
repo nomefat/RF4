@@ -22,12 +22,28 @@ Dialog DLL:      TCM.DLL V1.14.14.0
  
 <h2>Project:</h2>
 E:\นคื๗\AP_4RF\AP_RF4\MDK-ARM\AP_RF4.uvprojx
-Project File Date:  07/27/2017
+Project File Date:  11/13/2017
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 3 (build 300)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'AP_RF4'
-"AP_RF4\AP_RF4.axf" - 0 Error(s), 0 Warning(s).
+compiling update_s_rp.c...
+..\User\RF4\rf_hal.h(46): warning:  #1295-D: Deprecated declaration rf_io_tx_4 - give arg types
+  void rf_io_tx_4();
+../Inc/debug.h(33): warning:  #1295-D: Deprecated declaration re_start_sensor_event_record - give arg types
+  void re_start_sensor_event_record();
+../Inc/debug.h(35): warning:  #1295-D: Deprecated declaration debug_sensor_event_to_str - give arg types
+  void debug_sensor_event_to_str();
+../Inc/update_s_rp.h(35): warning:  #1295-D: Deprecated declaration enable_sensor_update - give arg types
+  void enable_sensor_update();
+../Inc/update_s_rp.h(36): warning:  #1295-D: Deprecated declaration enable_rp_update - give arg types
+  void enable_rp_update();
+..\Src\update_s_rp.c: 5 warnings, 0 errors
+linking...
+Program Size: Code=46536 RO-data=2152 RW-data=756 ZI-data=62436  
+FromELF: creating hex file...
+After Build - User command #1: C:/Keil_v5/ARM/ARMCC/bin/fromelf.exe --bin -o ./AP_RF4/AP_RF4.bin ./AP_RF4/AP_RF4.axf
+"AP_RF4\AP_RF4.axf" - 0 Error(s), 5 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -45,7 +61,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:01
+Build Time Elapsed:  00:00:11
 </pre>
 </body>
 </html>

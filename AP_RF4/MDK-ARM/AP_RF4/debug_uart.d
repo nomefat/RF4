@@ -39,3 +39,4 @@ ap_rf4\debug_uart.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ap_rf4\debug_uart.o: ..\User\RF4\rf_hal.h
 ap_rf4\debug_uart.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 ap_rf4\debug_uart.o: ..\User\Ap_param\ap_param.h
+ap_rf4\debug_uart.o: ../Inc/debug.h

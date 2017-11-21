@@ -36,3 +36,5 @@ ap_rf4\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 ap_rf4\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 ap_rf4\main.o: ..\User\typedef_struct.h
 ap_rf4\main.o: ..\User\Ap_param\ap_param.h
+ap_rf4\main.o: ../Inc/eeprom.h
+ap_rf4\main.o: ../Inc/flash.h

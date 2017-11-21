@@ -4,22 +4,27 @@
 
 
 #define TO_N1_BUFF_LENGTH 50              
-#define RE_SEND_TIMES  1            //重发次数
+#define RE_SEND_TIMES  10            //重发次数
+
+
+int to_n1_buff_insert_ptr = 0;               //写偏移
+volatile int to_n1_buff_get_ptr = 0;								//读偏移
 
 uint8_t send_to_n1_buff[TO_N1_BUFF_LENGTH][256]={0};          //发送给N1的环形缓冲buff          50个256大小的数组
 uint8_t send_to_n1_data[256]={0};
-uint8_t send_to_n1_ack[10]={0xaa,0x55,0,0,0,0,1,1,0};
-
-int to_n1_buff_insert_ptr = 0;               //写偏移
-int to_n1_buff_get_ptr = 0;								//读偏移
+uint8_t send_to_n1_ack[10]={0xaa,0x55,0,0,0,0,1,1,0xc1,0xc0};
 
 
+
+int to_n1_lost_packet_count;
 
 extern UART_HandleTypeDef huart3;
-#define CLEAR_SEND_TO_N1_TIMEOUT() TIM2->CNT = 0;
-#define SEND_TO_N1_TIMEOUT_20MS() (TIM2->CNT>(2*10000*1))  //20ms
+#define CLEAR_SEND_TO_N1_TIMEOUT() TIM2->CNT = 0
+#define SEND_TO_N1_TIMEOUT_20MS() (TIM2->CNT>(20000))  //20ms
 #define SEND_TO_N1_TIMEOUT_1MS() (TIM2->CNT>(1000*1))     //1ms
 
+extern char gprs_debug_buff[256];
+extern void debug_uart_send_string(char *pstr);
 
 /*** CRC table for the CRC-16. The poly is 0x8005 (x^16 + x^15 + x^2 + 1) */
 unsigned short const crc16_table[256] = {
@@ -93,6 +98,8 @@ int insert_to_n1_buff(uint8_t *data,uint8_t len,uint8_t cmd)
 	if((to_n1_buff_insert_ptr+1)%TO_N1_BUFF_LENGTH==to_n1_buff_get_ptr)
 		return -1;
 	
+	__disable_irq() ; 
+	
 	send_to_n1_buff[to_n1_buff_insert_ptr][0]=0xaa;
 	send_to_n1_buff[to_n1_buff_insert_ptr][1]=0x55;
 	send_to_n1_buff[to_n1_buff_insert_ptr][2]=(packet_seq>>24)&0xff;
@@ -109,12 +116,14 @@ int insert_to_n1_buff(uint8_t *data,uint8_t len,uint8_t cmd)
 		send_to_n1_buff[to_n1_buff_insert_ptr][i+8] = data[i];
 	}	
 
-  uiCrcValue = crc16(0, data, len);	
+  uiCrcValue = crc16(0, &send_to_n1_buff[to_n1_buff_insert_ptr][7], len+1);	
 	send_to_n1_buff[to_n1_buff_insert_ptr][8+len] = uiCrcValue & 0xFF;
 	send_to_n1_buff[to_n1_buff_insert_ptr][8+len+1] = (uiCrcValue>>8) & 0xFF;
 
 	
 	to_n1_buff_insert_ptr = (to_n1_buff_insert_ptr+1)%TO_N1_BUFF_LENGTH;
+	
+	__enable_irq() ; 
 	return 0;	
 	
 }
@@ -133,8 +142,13 @@ int get_from_n1_buff(uint8_t *data)
 
 	if(to_n1_buff_insert_ptr==to_n1_buff_get_ptr)
 		return -1;		
+	
 	memcpy(data,&send_to_n1_buff[to_n1_buff_get_ptr],256);
+	
 	to_n1_buff_get_ptr = (to_n1_buff_get_ptr+1)%TO_N1_BUFF_LENGTH;
+
+//	sprintf(gprs_debug_buff,"to_n1:v=%d seq=%d rptr=%d\r\n",v,send_to_n1_data[5]+(send_to_n1_data[4]<<8)+(send_to_n1_data[3]<<16),to_n1_buff_get_ptr);
+//	debug_uart_send_string(gprs_debug_buff);	
 	return 0;
 
 }
@@ -151,10 +165,12 @@ int get_from_n1_buff(uint8_t *data)
 void to_n1_buff_handle()
 {
 	static int Tx_conter  = 0;
+	static int packet_seq = 0;
+	int packet_seq_rep = 0;
 	
 	if(send_to_n1_ack[0] != 0 && SEND_TO_N1_TIMEOUT_1MS())  //优先发送ack
 	{
-		if(HAL_OK == HAL_UART_Transmit_DMA(&huart3,send_to_n1_ack,9))
+		if(HAL_OK == HAL_UART_Transmit_DMA(&huart3,send_to_n1_ack,10))
 		{
 			CLEAR_SEND_TO_N1_TIMEOUT();
 			send_to_n1_ack[0] = 0;
@@ -162,21 +178,46 @@ void to_n1_buff_handle()
 	}	
 	else if(send_to_n1_data[0] == 0)    //从buff中读取的数据已经发送成功，可以重新读取buff
 	{
-		get_from_n1_buff(send_to_n1_data);	   //读取buff
+		if(0==get_from_n1_buff(send_to_n1_data))   //读取buff
+		{
+			Tx_conter = 0;
+		}			
 	} 
 	else  //第一个字节不等于0 来判断有数据需要发送
 	{		
 		if((Tx_conter<RE_SEND_TIMES && SEND_TO_N1_TIMEOUT_20MS()) || (Tx_conter == 0 && SEND_TO_N1_TIMEOUT_1MS()))        //发送次数小于重发次数 而且已经超时未收到ack 或者 第一次发送
 		{
-				HAL_UART_Transmit_DMA(&huart3,send_to_n1_data,send_to_n1_data[6]+10);
-				CLEAR_SEND_TO_N1_TIMEOUT();
+				HAL_GPIO_WritePin(general_led_5_GPIO_Port,general_led_5_Pin,GPIO_PIN_RESET);
+				HAL_UART_Transmit_DMA(&huart3,send_to_n1_data,send_to_n1_data[6]+9);
+				CLEAR_SEND_TO_N1_TIMEOUT();		
+		
+				TIM2->CNT = 0;
 				Tx_conter++;
+				packet_seq_rep = send_to_n1_data[5] + (send_to_n1_data[4]<<8) + (send_to_n1_data[3]<<16) + (send_to_n1_data[2]<<24);
+			
+				if(packet_seq - packet_seq_rep >1)
+					packet_seq_rep = packet_seq_rep;
+				
+				packet_seq = packet_seq_rep;
+				
+			
 				if(Tx_conter >= RE_SEND_TIMES)
 				{
+					to_n1_lost_packet_count++;
 					Tx_conter = 0;
+					while(TIM2->CNT < 1000);
 					send_to_n1_data[0] = 0;         //丢掉该数据
 				}
 		}	
 	}
 
 }
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart3)
+	{
+		HAL_GPIO_WritePin(general_led_5_GPIO_Port,general_led_5_Pin,GPIO_PIN_SET);	
+	}
+}
+

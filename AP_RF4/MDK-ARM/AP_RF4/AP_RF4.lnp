@@ -24,14 +24,18 @@
 "ap_rf4\stm32f4xx_it.o"
 "ap_rf4\main.o"
 "ap_rf4\debug_uart.o"
+"ap_rf4\debug.o"
 "ap_rf4\from_n1.o"
 "ap_rf4\to_n1.o"
+"ap_rf4\from_n1_store_s_rp_frimware.o"
 "ap_rf4\gprs_hal.o"
 "ap_rf4\gprs_comm.o"
 "ap_rf4\rf_hal.o"
 "ap_rf4\rf.o"
+"ap_rf4\update_s_rp.o"
 "ap_rf4\ap_param.o"
 "ap_rf4\eeprom.o"
+"ap_rf4\flash.o"
 --library_type=microlib --strict --scatter "AP_RF4\AP_RF4.sct"
 --diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

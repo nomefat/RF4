@@ -43,7 +43,8 @@
 
 #include "typedef_struct.h"
 #include "ap_param.h"
-
+#include "eeprom.h"
+#include "flash.h"
 
 extern void to_n1_buff_handle();
 extern void start_from_n1_dma_receive();
@@ -59,16 +60,30 @@ extern void debug_cmd_handle(void);
 extern void rf_io_tx(SPI_HandleTypeDef* hspi);
 extern void rf_cmd_tx(SPI_HandleTypeDef* hspi);
 extern void rf_write_buff(SPI_HandleTypeDef* hspi,void *ptr,int len);
+extern HAL_StatusTypeDef ee_read(uint32_t ee_address,uint16_t size);
+extern HAL_StatusTypeDef ee_write(uint32_t ee_address,uint16_t size);	
+extern HAL_StatusTypeDef ee_write_no(uint32_t ee_address,uint16_t size);
+extern HAL_StatusTypeDef ee_read_no(uint32_t ee_address,uint16_t size);
+extern void read_ap_param(void);
+extern void ee_task_poll(void);
+extern void read_firmware_rp_head();
+extern void read_firmware_sensor_head();
 
-	
+
+
 extern struct_systerm_info systerm_info;
 extern struct_ap_param ap_param;
+extern uint8_t ap_param_write_flash_flag;
+
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 CRC_HandleTypeDef hcrc;
 
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
@@ -108,18 +123,9 @@ static void MX_SPI1_Init(void);
 static void MX_SPI4_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_USART6_UART_Init(void);
-static void MX_I2C1_Init(void);
+void MX_I2C1_Init(void);
 static void MX_CRC_Init(void);
 static void MX_TIM2_Init(void);
-
-
-
-__asm void INTX_DISABLE(void)
-{
-        CPSID   I
-        BX      LR          
-}
-
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -127,14 +133,15 @@ __asm void INTX_DISABLE(void)
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+HAL_StatusTypeDef iic_stat;
 /* USER CODE END 0 */
-
+	FLASH_EraseInitTypeDef EraseInit;
+	uint32_t SectorError	;	
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+int32_t delay;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -150,7 +157,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-	
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -166,9 +173,7 @@ int main(void)
   MX_I2C1_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
-	HAL_TIM_Base_Start(&htim2);
-//	HAL_NVIC_DisableIRQ(SysTick_IRQn);
-//	INTX_DISABLE();
+	
   /* USER CODE BEGIN 2 */
 //			HAL_GPIO_WritePin(SPI3_rf_power_onoff_GPIO_Port,SPI3_rf_power_onoff_Pin,GPIO_PIN_RESET);
 //		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_12,GPIO_PIN_RESET);
@@ -179,7 +184,11 @@ int main(void)
 //		HAL_GPIO_WritePin(SPI3_rf_io_vreg_GPIO_Port,SPI3_rf_io_vreg_Pin,GPIO_PIN_RESET);	
 //		HAL_GPIO_WritePin(SPI3_rf_io_fifop_GPIO_Port,SPI3_rf_io_fifop_Pin,GPIO_PIN_RESET);
 //		HAL_GPIO_WritePin(SPI3_rf_io_fifo_GPIO_Port,SPI3_rf_io_fifo_Pin,GPIO_PIN_RESET);			
-
+	
+//	read_ap_param();
+	
+	init_ap_param();
+	read_ap_param_flash();
 
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);      //启动systick 2ms中断
 	HAL_SYSTICK_Config(328125);
@@ -192,10 +201,13 @@ int main(void)
 	start_from_debug_dma_receive();
 	
 	led_1_close();
+	HAL_TIM_Base_Start(&htim2);
 
-	ap_param.ap_syn_param[0] = 0x10;
+	systerm_info.enable_rf = 1;   //使能2ms中断中rf发送包
   /* USER CODE END 2 */
-
+			
+	read_firmware_rp_head();
+	read_firmware_sensor_head();
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -209,7 +221,11 @@ int main(void)
 		debug_cmd_handle();
 		to_n1_buff_handle();
 		gprs_main_call();
-
+		
+		if(ap_param_write_flash_flag)
+			write_ap_param_flash();
+		
+//		ee_task_poll();
 
 //		if(systerm_info.slot%512 == 10){
 //			data[1] = 0x55;
@@ -297,11 +313,11 @@ static void MX_CRC_Init(void)
 }
 
 /* I2C1 init function */
-static void MX_I2C1_Init(void)
+void MX_I2C1_Init(void)
 {
 
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
+  hi2c1.Init.ClockSpeed = 1000000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -416,10 +432,10 @@ static void MX_TIM2_Init(void)
   TIM_MasterConfigTypeDef sMasterConfig;
 
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 42;
+  htim2.Init.Prescaler = 168;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0xffff;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
+  htim2.Init.Period = 800000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -508,11 +524,14 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 1, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
   /* DMA1_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+  /* DMA1_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
   /* DMA1_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
@@ -522,6 +541,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA1_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -531,12 +553,12 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-  /* DMA2_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 1, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);
-  /* DMA2_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 2, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+  /* DMA2_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+  /* DMA2_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 
 }
 

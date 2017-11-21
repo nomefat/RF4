@@ -39,11 +39,19 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
-/* USER CODE BEGIN Includes */
+#define Watch_dog_io_Pin GPIO_PIN_9
+#define Watch_dog_io_GPIO_Port GPIOE
 
+
+/* USER CODE BEGIN Includes */
+extern void re_send_to_n1(void);
+extern void send_to_n1(void);
+extern void start_from_n1_dma_receive();
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
+
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 
@@ -57,6 +65,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -64,14 +73,17 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+int start_app = 0;
+extern int sec;
+extern int ms_500;
 /* USER CODE END 0 */
 
 int main(void)
 {
-
+	
   /* USER CODE BEGIN 1 */
-
+	int sec_v = 0;
+	void( *pfunc)() = (void( *))(*((uint32_t *)0x08004004));
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -94,10 +106,14 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART3_UART_Init();
+  MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
-
+	HAL_TIM_Base_Start_IT(&htim1);
+	start_from_n1_dma_receive();
+	//send_to_n1();
   /* USER CODE END 2 */
+
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -106,7 +122,29 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
+		re_send_to_n1();	
+		HAL_GPIO_TogglePin(Watch_dog_io_GPIO_Port,Watch_dog_io_Pin);
+		
+		if(start_app == 0 && sec>3)
+		{
+				
+				HAL_TIM_Base_Stop(&htim1);
+				HAL_DMA_Abort(&hdma_usart3_rx);
+				HAL_UART_DeInit(&huart3);
+				HAL_NVIC_DisableIRQ(DMA1_Stream1_IRQn);
+				__set_MSP(*((uint32_t *)0x08004000));
+				pfunc();
+		}
+		else if(start_app == 0 && ms_500<6 && sec_v!=ms_500)
+		{
+			sec_v = ms_500;
+			HAL_GPIO_TogglePin(LED1_GPIO_Port,LED1_Pin);
+				
+		}
+		else if(start_app == 1)
+		{
+			HAL_GPIO_TogglePin(LED5_GPIO_Port,LED5_Pin);
+		}
   }
   /* USER CODE END 3 */
 
@@ -168,6 +206,39 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* TIM1 init function */
+static void MX_TIM1_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 96;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 30000;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  htim1.Init.RepetitionCounter = 0;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* USART3 init function */
 static void MX_USART3_UART_Init(void)
 {
@@ -201,7 +272,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 
 }
-
+#define Watch_dog_io_Pin GPIO_PIN_9
 /** Configure pins as 
         * Analog 
         * Input 
@@ -215,9 +286,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
-
+	__HAL_RCC_GPIOE_CLK_ENABLE();
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, LED1_Pin|LED2_Pin|LED3_Pin|LED4_Pin 
                           |LED5_Pin|LED6_Pin, GPIO_PIN_SET);
@@ -230,6 +301,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+	
+  /*Configure GPIO pins : Watch_dog_io_Pin SPI4_rf_cs_Pin */
+  GPIO_InitStruct.Pin = Watch_dog_io_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);	
 
 }
 

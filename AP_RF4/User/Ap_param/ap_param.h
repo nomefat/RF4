@@ -5,6 +5,8 @@
 #include "stm32f4xx_hal.h"
 
 
+#define AP_VERSION  0X0002
+
 
 #pragma pack(1)
 
@@ -79,7 +81,7 @@ typedef struct _dev_list{
 extern struct_ap_param ap_param;
 
 
-
+void init_ap_param(void);
 
 
 

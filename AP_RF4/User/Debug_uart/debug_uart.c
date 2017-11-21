@@ -5,6 +5,7 @@
 #include "rf_hal.h"
 #include "math.h"
 #include "ap_param.h"
+#include "debug.h"
 
 
 extern UART_HandleTypeDef huart6;
@@ -40,7 +41,7 @@ struct _cmd_list{
 
 
 
-
+extern uint8_t ap_param_write_flash_flag;
 
 
 
@@ -206,6 +207,7 @@ AP4RF_V0.1 cmd help\r\n\
 5.rf \r\n\
 6.setrpch \r\n\
 7.setrpslot \r\n\
+8.get_sensor \r\n\
 *******************************************************\r\n");
 
 }
@@ -227,12 +229,16 @@ void set_rf_mode(char *param)
 	}	
 	rf_stat[ps_pram->param[0]-1].mode = ps_pram->param[1];
 	rf_stat[ps_pram->param[0]-1].rf_power_stat = RF_POWER_OFF;
+	
 	debug_uart_send_string("RF已经设置完模式\r\n");
 }
 
 void setrfch(char *param)
 {
 	struct _cmd_param_int* ps_pram = get_str_param(param);
+	
+	uint8_t *ptr = (uint8_t *)&ap_param.ap_channel;
+	
 	if(ps_pram->param[0]>4 || ps_pram->param[0]<1)
 	{
 		debug_uart_send_string("选择RF错误（1-4）\r\n");
@@ -243,7 +249,10 @@ void setrfch(char *param)
 		debug_uart_send_string("RF通道错误（0-2）\r\n");
 		return;
 	}	
+	
 	rf_set_channel(rf_index[ps_pram->param[0]-1],ps_pram->param[1]);
+	ptr[ps_pram->param[0]-1] = ps_pram->param[1];
+	ap_param_write_flash_flag = 1;
 	debug_uart_send_string("RF已经设置完通道\r\n");	
 }
 
@@ -305,6 +314,20 @@ void set_rp_slot(char *param)
 }
 
 
+void restart_sensor(char *param)
+{
+	re_start_sensor_event_record();
+	debug_uart_send_string("restart sensor event record \r\n");
+}
+
+extern char debug_sensor_event_str[SENSOR_NUM][43];
+void get_sensor(char *param)
+{
+	debug_sensor_event_to_str();
+	debug_uart_send_string(&debug_sensor_event_str[0][0]);
+}
+
+
 
 //在此处添加你的命令字符串和回调函数
 CMD_CALLBACK_LIST_BEGIN
@@ -318,7 +341,8 @@ CMD_CALLBACK("setrfch",setrfch)
 CMD_CALLBACK("rf",get_rf_stat)
 CMD_CALLBACK("setrpch",set_rp_ch)
 CMD_CALLBACK("setrpslot",set_rp_slot)
-
+CMD_CALLBACK("restart_sensor",restart_sensor)
+CMD_CALLBACK("get_sensor",get_sensor)
 
 CMD_CALLBACK_LIST_END
 

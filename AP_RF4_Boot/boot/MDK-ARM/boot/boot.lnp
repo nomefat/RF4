@@ -2,6 +2,7 @@
 "boot\main.o"
 "boot\stm32f4xx_it.o"
 "boot\stm32f4xx_hal_msp.o"
+"boot\boot.o"
 "boot\stm32f4xx_hal_rcc.o"
 "boot\stm32f4xx_hal_tim.o"
 "boot\stm32f4xx_hal_cortex.o"

@@ -40,6 +40,9 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_i2c1_rx;
+extern DMA_HandleTypeDef hdma_i2c1_tx;
+extern I2C_HandleTypeDef hi2c1;
 extern DMA_HandleTypeDef hdma_spi1_rx;
 extern DMA_HandleTypeDef hdma_spi3_rx;
 extern DMA_HandleTypeDef hdma_spi4_rx;
@@ -232,7 +235,7 @@ void DMA1_Stream0_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
 
   /* USER CODE END DMA1_Stream0_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_spi3_rx);
+  HAL_DMA_IRQHandler(&hdma_i2c1_rx);
   /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
 
 //	HAL_GPIO_WritePin(SPI3_rf_cs_GPIO_Port,SPI3_rf_cs_Pin,GPIO_PIN_SET);
@@ -251,6 +254,20 @@ void DMA1_Stream1_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
 
   /* USER CODE END DMA1_Stream1_IRQn 1 */
+}
+
+/**
+* @brief This function handles DMA1 stream2 global interrupt.
+*/
+void DMA1_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_spi3_rx);
+  /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream2_IRQn 1 */
 }
 
 /**
@@ -293,6 +310,34 @@ void DMA1_Stream6_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream6_IRQn 1 */
 
   /* USER CODE END DMA1_Stream6_IRQn 1 */
+}
+
+/**
+* @brief This function handles I2C1 event interrupt.
+*/
+void I2C1_EV_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C1_EV_IRQn 0 */
+
+  /* USER CODE END I2C1_EV_IRQn 0 */
+  HAL_I2C_EV_IRQHandler(&hi2c1);
+  /* USER CODE BEGIN I2C1_EV_IRQn 1 */
+
+  /* USER CODE END I2C1_EV_IRQn 1 */
+}
+
+/**
+* @brief This function handles I2C1 error interrupt.
+*/
+void I2C1_ER_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C1_ER_IRQn 0 */
+
+  /* USER CODE END I2C1_ER_IRQn 0 */
+  HAL_I2C_ER_IRQHandler(&hi2c1);
+  /* USER CODE BEGIN I2C1_ER_IRQn 1 */
+
+  /* USER CODE END I2C1_ER_IRQn 1 */
 }
 
 /**
@@ -345,6 +390,20 @@ void EXTI15_10_IRQHandler(void)
 }
 
 /**
+* @brief This function handles DMA1 stream7 global interrupt.
+*/
+void DMA1_Stream7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_i2c1_tx);
+  /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream7_IRQn 1 */
+}
+
+/**
 * @brief This function handles DMA2 stream0 global interrupt.
 */
 void DMA2_Stream0_IRQHandler(void)
@@ -387,31 +446,31 @@ void DMA2_Stream2_IRQHandler(void)
 }
 
 /**
-* @brief This function handles DMA2 stream5 global interrupt.
+* @brief This function handles DMA2 stream3 global interrupt.
 */
-void DMA2_Stream5_IRQHandler(void)
+void DMA2_Stream3_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream5_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream3_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream5_IRQn 0 */
+  /* USER CODE END DMA2_Stream3_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi5_rx);
-  /* USER CODE BEGIN DMA2_Stream5_IRQn 1 */
+  /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream5_IRQn 1 */
+  /* USER CODE END DMA2_Stream3_IRQn 1 */
 }
 
 /**
-* @brief This function handles DMA2 stream7 global interrupt.
+* @brief This function handles DMA2 stream6 global interrupt.
 */
-void DMA2_Stream7_IRQHandler(void)
+void DMA2_Stream6_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream6_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream7_IRQn 0 */
+  /* USER CODE END DMA2_Stream6_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart6_tx);
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
+  /* USER CODE BEGIN DMA2_Stream6_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream7_IRQn 1 */
+  /* USER CODE END DMA2_Stream6_IRQn 1 */
 }
 
 /**
@@ -432,6 +491,312 @@ void USART6_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+/*
+void WWDG_IRQHandler(void)
+{
+int a = 100;
+}                                                      
+void PVD_IRQHandler(void)
+{
+int a = 100;
+}                                     
+void TAMP_STAMP_IRQHandler(void)
+{
+int a = 100;
+}                 
+void RTC_WKUP_IRQHandler(void)
+{
+int a = 100;
+}                               
+void FLASH_IRQHandler(void)
+{
+int a = 100;
+}                                                      
+void RCC_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void EXTI0_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void EXTI1_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+                                                        
+void EXTI3_IRQHandler(void)
+{
+int a = 100;
+}                                                        
+                                                        
+                                   
+                                        
+void DMA1_Stream2_IRQHandler(void)
+{
+int a = 100;
+}                                         
+                                         
+void DMA1_Stream4_IRQHandler(void)
+{
+int a = 100;
+}                                         
+                                        
+void ADC_IRQHandler(void)
+{
+int a = 100;
+}                                        
+void CAN1_TX_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void CAN1_RX0_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void CAN1_RX1_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void CAN1_SCE_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void EXTI9_5_IRQHandler(void)
+{
+int a = 100;
+}                                               
+void TIM1_BRK_TIM9_IRQHandler(void)
+{
+int a = 100;
+}                       
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+int a = 100;
+}                     
+void TIM1_TRG_COM_TIM11_IRQHandler(void)
+{
+int a = 100;
+} 
+void TIM1_CC_IRQHandler(void)
+{
+int a = 100;
+}                                              
+void TIM2_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void TIM3_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void TIM4_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void I2C1_EV_IRQHandler(void)
+{
+int a = 100;
+}                                                        
+void I2C1_ER_IRQHandler(void)
+{
+int a = 100;
+}                                                        
+void I2C2_EV_IRQHandler(void)
+{
+int a = 100;
+}                                                       
+void I2C2_ER_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void SPI1_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void SPI2_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void USART1_IRQHandler(void)
+{
+int a = 100;
+}                                                      
+                                          
+void RTC_Alarm_IRQHandler(void)
+{
+int a = 100;
+}                           
+void OTG_FS_WKUP_IRQHandler(void)
+{
+int a = 100;
+}                               
+void TIM8_BRK_TIM12_IRQHandler(void)
+{
+int a = 100;
+}                     
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+int a = 100;
+}                      
+void TIM8_TRG_COM_TIM14_IRQHandler(void)
+{
+int a = 100;
+} 
+void TIM8_CC_IRQHandler(void)
+{
+int a = 100;
+}                                              
+void DMA1_Stream7_IRQHandler(void)
+{
+int a = 100;
+}                                                
+void FMC_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void SDIO_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void TIM5_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void SPI3_IRQHandler(void)
+{
+int a = 100;
+}                                                           
+void UART4_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void UART5_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void TIM6_DAC_IRQHandler(void)
+{
+int a = 100;
+}                           
+void TIM7_IRQHandler(void)
+{
+int a = 100;
+}                             
+                                          
+void DMA2_Stream3_IRQHandler(void)
+{
+int a = 100;
+}                                          
+void DMA2_Stream4_IRQHandler(void)
+{
+int a = 100;
+}                                       
+void ETH_IRQHandler(void)
+{
+int a = 100;
+}                                                        
+void ETH_WKUP_IRQHandler(void)
+{
+int a = 100;
+}                               
+void CAN2_TX_IRQHandler(void)
+{
+int a = 100;
+}                                                          
+void CAN2_RX0_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void CAN2_RX1_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void CAN2_SCE_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void OTG_FS_IRQHandler(void)
+{
+int a = 100;
+}                                                   
+                                       
+void DMA2_Stream6_IRQHandler(void)
+{
+int a = 100;
+}                                         
+                                                      
+void I2C3_EV_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void I2C3_ER_IRQHandler(void)
+{
+int a = 100;
+}                                                         
+void OTG_HS_EP1_OUT_IRQHandler(void)
+{
+int a = 100;
+}                          
+void OTG_HS_EP1_IN_IRQHandler(void)
+{
+int a = 100;
+}                           
+void OTG_HS_WKUP_IRQHandler(void)
+{
+int a = 100;
+}                               
+void OTG_HS_IRQHandler(void)
+{
+int a = 100;
+}                                                  
+void DCMI_IRQHandler(void)
+{
+int a = 100;
+}                                                                                                            
+void HASH_RNG_IRQHandler(void)
+{
+int a = 100;
+} 
+void FPU_IRQHandler(void)
+{
+int a = 100;
+} 
+void UART7_IRQHandler(void)
+{
+int a = 100;
+}                 
+void UART8_IRQHandler(void)
+{
+int a = 100;
+}                 
+void SPI4_IRQHandler(void)
+{
+int a = 100;
+}                  
+void SPI5_IRQHandler(void)
+{
+int a = 100;
+}                  
+void SPI6_IRQHandler(void)
+{
+int a = 100;
+}                  
+void SAI1_IRQHandler(void)
+{
+int a = 100;
+}                  
+void LTDC_IRQHandler(void)
+{
+int a = 100;
+}                  
+void LTDC_ER_IRQHandler(void)
+{
+int a = 100;
+}                
+void DMA2D_IRQHandler(void)
+{
+int a = 100;
+} */
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

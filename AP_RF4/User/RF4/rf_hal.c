@@ -3,6 +3,9 @@
 #include "rf_hal.h"
 #include "hal_cc2520.h"
 #include "debug_uart.h"
+#include "ap_param.h"
+
+
 
 #define INCLUDE_PA
 
@@ -28,7 +31,7 @@ uint8_t rf_sec_flag = 0;         //秒点标志 由同步包中断置1
 uint8_t rf_rx_buff[4][256];
 
 
-
+extern struct_ap_param ap_param;
 
 
 int spi_to_index(SPI_HandleTypeDef* hspi)
@@ -708,9 +711,13 @@ void rf_power_reset(SPI_HandleTypeDef hspi1)
 void rf_set_channel(SPI_HandleTypeDef* hspi, uint16_t uiChannel )
 {
     uint16_t   uiReg;
-      
-    uiReg       =   uiChannel + ( uiChannel << 2u ) + 0x0Bu;		// uiChannel * 5u + 0x4165.
- 
+    if(uiChannel <16)  
+			uiReg       =   uiChannel + ( uiChannel << 2u ) + 0x0Bu;		// uiChannel * 5u + 0x4165.
+		else
+		{
+			uiChannel -= 16;
+			uiReg       =   uiChannel + ( uiChannel << 2u ) + 0x0Bu + 2;		// uiChannel * 5u + 0x4165.
+		}
     CC2520_set_reg(hspi,CC2520_FREQCTRL,uiReg);
 
 }
@@ -922,6 +929,8 @@ void rf_manage()
 {
 	int i;
 	
+	uint8_t *p_chanel = (uint8_t *)&ap_param.ap_channel;
+	
 	if(rf_sec_flag < 1) //1sec进入下面一次
 		return;
 	
@@ -946,7 +955,7 @@ void rf_manage()
 						rf_cmd_tx(rf_index[i]);
 					else
 					{
-						rf_set_channel(rf_index[i],12);
+						rf_set_channel(rf_index[i],p_chanel[i]);//
 					}
 				}
 					
