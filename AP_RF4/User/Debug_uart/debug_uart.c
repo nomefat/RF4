@@ -43,6 +43,25 @@ struct _cmd_list{
 
 extern uint8_t ap_param_write_flash_flag;
 
+extern uint8_t rf_scan_channel_enable;
+
+extern uint8_t rf_send_1000_p_enable; 
+
+extern struct_test_1000p_data test_1000p_data;
+
+extern unsigned char rf_send_data[];
+
+extern char gprs_debug_buff[256];
+
+extern int enable_print_sensor_event;   //使能rf 检测器事件打印功能
+	
+extern int gprs_print_rx_tx_data_enable;   //使能gprs收发数据打印功能
+
+
+
+
+
+
 
 
 
@@ -194,20 +213,32 @@ struct _cmd_param_int* get_str_param(char *param)
 	
 }
 
+void print_now_rfmode()
+{
 
+}
 
 void help(char *param)
 {
 	debug_uart_send_string("*******************************************************\r\n\
 AP4RF_V0.1 cmd help\r\n\
-1.setrfmode [] []......param1:1-4(rf1-rf4) param2:0-3(work,notz,tz,idle)\r\n\
-2.setrfch [] []......param1:1-4(rf1-rf4) param2:0-15 \r\n\
-3.sendgprs200 \r\n\
-4.gprs \r\n\
-5.rf \r\n\
+ap....................打印AP参数\
+rf_manage:\
+	1.setrfmode [] []...分别设置4路射频模式...参数1:1-4表示(rf1-rf4) 参数2:0-3(工作模式,单载波,调制波,空闲)\r\n\
+	2.setrfch [] [].....分别设置4路射频通道...参数1:1-4表示(rf1-rf4) 参数2:0-31 个通道\r\n\
+	3.scan_ch [] .......4路射频启动是单载波扫描0-15通道 前提是rf处于单载波模式\r\n\
+	4.rf_print [].......0失能sensor事件包打印 1使能sensor事件包打印\r\n\
+\
+gprs_manage:\
+	1.gprs ..............打印一次gprs工作状态\r\n\
+	2.sendgprs200 .......gprs发送200字节的数据到服务器\r\n\
+	3.gprs_print []......0表示关闭打印 1表示打开打印\r\n\
+\
 6.setrpch \r\n\
-7.setrpslot \r\n\
-8.get_sensor \r\n\
+sensor_manage:\
+	7.setrpslot \r\n\
+	8.get_sensor \r\n\
+\
 *******************************************************\r\n");
 
 }
@@ -244,16 +275,19 @@ void setrfch(char *param)
 		debug_uart_send_string("选择RF错误（1-4）\r\n");
 		return;
 	}	
-	if(ps_pram->param[1]>15 || ps_pram->param[1]<0)
+	if(ps_pram->param[1]>30 || ps_pram->param[1]<0)
 	{
 		debug_uart_send_string("RF通道错误（0-2）\r\n");
 		return;
 	}	
 	
-	rf_set_channel(rf_index[ps_pram->param[0]-1],ps_pram->param[1]);
-	ptr[ps_pram->param[0]-1] = ps_pram->param[1];
-	ap_param_write_flash_flag = 1;
-	debug_uart_send_string("RF已经设置完通道\r\n");	
+
+	
+	rf_set_channel(rf_index[4-ps_pram->param[0]],ps_pram->param[1]);
+	ptr[4-ps_pram->param[0]] = ps_pram->param[1];
+//	ap_param_write_flash_flag = 1;
+	sprintf(gprs_debug_buff,"setrfch ok %d %d\r\n",ps_pram->param[0],ps_pram->param[1]);
+	debug_uart_send_string(gprs_debug_buff);	
 }
 
 
@@ -327,7 +361,108 @@ void get_sensor(char *param)
 	debug_uart_send_string(&debug_sensor_event_str[0][0]);
 }
 
+void scan_channel_ebale(char *param)
+{
+	struct _cmd_param_int* ps_pram = get_str_param(param);
+	if(ps_pram->param[0] == 1)
+	{
+		rf_scan_channel_enable = 1;
+		debug_uart_send_string("enable scan rf channel \r\n");
+	}
+	else
+	{
+		rf_scan_channel_enable = 0;
+		debug_uart_send_string("disenable scan rf channel \r\n");
+	}
+	
+}
 
+
+void rf_send(char *param)
+{
+	struct _cmd_param_int* ps_pram = get_str_param(param);
+	if(ps_pram->param[0] >4 || ps_pram->param[0] <1)
+	{	
+		debug_uart_send_string("RF mast 1-4 \r\n");
+	}
+	rf_send_1000_p_enable = 0;
+	rf_send_1000_p_enable |= (1<<(ps_pram->param[0]-1));
+	rf_send_data[1] = 0;
+	rf_send_data[2] = 0;
+	rf_send_data[3] = 0;
+	rf_send_data[4] = 0;
+//	test_1000p_data.pakcet_count = ps_pram->param[1];
+	
+}
+
+
+void enable_rf_print_sensor_event(char *param)
+{
+	struct _cmd_param_int* ps_pram = get_str_param(param);	
+	if(ps_pram->param[0] >0 )
+	{
+		enable_print_sensor_event = 1;
+		debug_uart_send_string("enable print sensor event \r\n");
+	}
+	else
+	{
+		enable_print_sensor_event = 0;
+		debug_uart_send_string("disenable print sensor event \r\n");
+	}
+}
+
+void enable_gprs_print_tx_rx_data(char *param)
+{
+	struct _cmd_param_int* ps_pram = get_str_param(param);	
+	if(ps_pram->param[0] >0 )
+	{
+		gprs_print_rx_tx_data_enable = 1;
+		debug_uart_send_string("enable gprs print tx_rx data \r\n");
+	}
+	else
+	{
+		gprs_print_rx_tx_data_enable = 0;
+		debug_uart_send_string("disenable gprs print tx_rx data \r\n");
+	}
+}
+
+
+void print_version()
+{
+
+	if(RF_DEFAULT_MODE == ENABLE_NOMODULATE_CARRIER)
+	{
+		if(rf_scan_channel_enable == 0)
+			debug_uart_send_string("033ap:单载波模式 \r\n");
+		else
+			debug_uart_send_string("033ap:单载波扫频模式 \r\n");
+	}
+	else if(RF_DEFAULT_MODE == ENABLE_MODULATE_CARRIER)
+	{
+		if(rf_scan_channel_enable == 0)
+			debug_uart_send_string("033ap:调制波模式 \r\n");
+		else
+			debug_uart_send_string("033ap:调制波扫频模式 \r\n");
+	}	
+	else if(RF_DEFAULT_MODE == RF_WORK)
+	{
+		sprintf(gprs_debug_buff,"033ap:工作模式 version=%d.%d\r\n",AP_VERSION>>8,AP_VERSION&0xff);
+		debug_uart_send_string(gprs_debug_buff);
+	}		
+	else if(RF_DEFAULT_MODE == RF_IDLE)
+	{
+		debug_uart_send_string("033ap:空闲模式模式(可启动1000包收发测试) \r\n");
+	}			
+}
+
+
+void get_ap_param(char *param)
+{
+		sprintf(gprs_debug_buff,"033ap:version=%d.%d\r\napid=%x\r\nch=%d %d %d %d\r\nserverip=%d.%d.%d.%d port=%d\r\n",
+	AP_VERSION>>8,AP_VERSION&0xff,ap_param.ap_id,(ap_param.ap_channel>>24)&0XFF,(ap_param.ap_channel>>16)&0XFF,(ap_param.ap_channel>>8)&0XFF
+	,(ap_param.ap_channel)&0XFF,ap_param.gprs_server_ip&0xff,(ap_param.gprs_server_ip>>8)&0xff,(ap_param.gprs_server_ip>>16)&0xff,ap_param.gprs_server_ip>>24,ap_param.gprs_server_port);
+		debug_uart_send_string(gprs_debug_buff);	
+}
 
 //在此处添加你的命令字符串和回调函数
 CMD_CALLBACK_LIST_BEGIN
@@ -343,6 +478,12 @@ CMD_CALLBACK("setrpch",set_rp_ch)
 CMD_CALLBACK("setrpslot",set_rp_slot)
 CMD_CALLBACK("restart_sensor",restart_sensor)
 CMD_CALLBACK("get_sensor",get_sensor)
+CMD_CALLBACK("scan_ch",scan_channel_ebale)
+CMD_CALLBACK("send",rf_send)
+CMD_CALLBACK("gprs_print",enable_gprs_print_tx_rx_data)
+CMD_CALLBACK("rf_print",enable_rf_print_sensor_event)
+CMD_CALLBACK("ap",get_ap_param)
+
 
 CMD_CALLBACK_LIST_END
 

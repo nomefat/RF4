@@ -8,7 +8,7 @@
 
 
 
-
+extern CRC_HandleTypeDef hcrc;
 
 
 extern uint8_t ee_data_write[256];
@@ -30,10 +30,10 @@ struct_sensor_rp_param sensor_rp_param ;
 
 void init_ap_param(void)
 {
-	ap_param.ap_id = 0x1111;
+	ap_param.ap_id = HAL_CRC_Calculate(&hcrc,(uint32_t *)0x1fff7a10,3);
 	ap_param.ap_version = AP_VERSION;
-	ap_param.band_id = 0x1113;
-	ap_param.ap_channel = 0x05050505;
+	ap_param.band_id = ap_param.ap_id;
+	ap_param.ap_channel = 0x0d0d0d0d;
 	ap_param.ap_syn_param[0] = 0x10;
 	ap_param.gprs_server_ip = (74<<24)|(83<<16)|(239<<8)|219;
 	ap_param.gprs_server_port = 40005;

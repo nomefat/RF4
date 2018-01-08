@@ -27,22 +27,16 @@ Project File Date:  08/31/2017
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 3 (build 300)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'boot'
-compiling boot.c...
-..\boot.c(155): warning:  #177-D: variable "reback" was declared but never referenced
-  	uint8_t reback[20];
-..\boot.c(200): warning:  #144-D: a value of type "void *" cannot be used to initialize an entity of type "void (*)()"
+compiling main.c...
+../Src/main.c(49): warning:  #1295-D: Deprecated declaration start_from_n1_dma_receive - give arg types
+  extern void start_from_n1_dma_receive();
+../Src/main.c(86): warning:  #144-D: a value of type "void *" cannot be used to initialize an entity of type "void (*)()"
   	void( *pfunc)() = (void( *))(*((uint32_t *)0x08004004));
-..\boot.c(196): warning:  #177-D: variable "i" was declared but never referenced
-  	int i;
-..\boot.c(200): warning:  #177-D: variable "pfunc" was declared but never referenced
-  	void( *pfunc)() = (void( *))(*((uint32_t *)0x08004004));
-..\boot.c(279): warning:  #550-D: variable "uiCrcValue" was set but never used
-  	int16_t uiCrcValue=0;
-..\boot.c: 5 warnings, 0 errors
+../Src/main.c: 2 warnings, 0 errors
 linking...
 Program Size: Code=9868 RO-data=1004 RW-data=68 ZI-data=2044  
 FromELF: creating hex file...
-"boot\boot.axf" - 0 Error(s), 5 Warning(s).
+"boot\boot.axf" - 0 Error(s), 2 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -60,7 +54,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:11
+Build Time Elapsed:  00:00:15
 </pre>
 </body>
 </html>

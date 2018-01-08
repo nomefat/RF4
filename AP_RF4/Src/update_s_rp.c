@@ -33,6 +33,9 @@ void get_s_rp_input_update_stat(uint16_t dev_id, uint16_t flash_times)
 	
 	if(update_s_rp_manage.dev_num>=64)
 		return;
+
+//	if(update_s_rp_manage.update_s_rp_list[i].dev_packet_seq == 0)
+//		update_s_rp_manage.upadate_s_rp_enable = 1;
 	
 	for(i=0;i<update_s_rp_manage.dev_num;i++)     //如果设备已经在表中了，更新设备参数
 	{
@@ -48,8 +51,7 @@ void get_s_rp_input_update_stat(uint16_t dev_id, uint16_t flash_times)
 	update_s_rp_manage.update_s_rp_list[update_s_rp_manage.dev_num].dev_packet_seq = flash_times;
 	update_s_rp_manage.dev_num++;
 	
-	if(update_s_rp_manage.update_s_rp_list[i].dev_packet_seq == 0)
-		update_s_rp_manage.upadate_s_rp_enable = 2;
+
 }
 
 

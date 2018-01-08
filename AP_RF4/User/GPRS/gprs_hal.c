@@ -5,7 +5,7 @@
 
 
 
-#define GPRS_RCV_DMA_BUFF_LENGTH (1024+512)
+#define GPRS_RCV_DMA_BUFF_LENGTH (1024+512)  // gprs´®¿Ú½ÓÊÕ
 
 
 extern UART_HandleTypeDef huart2;

@@ -45,6 +45,10 @@
 #include "ap_param.h"
 #include "eeprom.h"
 #include "flash.h"
+#include "rf_hal.h"
+#include "debug_uart.h"
+
+
 
 extern void to_n1_buff_handle();
 extern void start_from_n1_dma_receive();
@@ -68,13 +72,13 @@ extern void read_ap_param(void);
 extern void ee_task_poll(void);
 extern void read_firmware_rp_head();
 extern void read_firmware_sensor_head();
-
+extern void make_result_test_1000p();
 
 
 extern struct_systerm_info systerm_info;
 extern struct_ap_param ap_param;
 extern uint8_t ap_param_write_flash_flag;
-
+extern struct_rf_stat rf_stat[4];
 
 /* USER CODE END Includes */
 
@@ -173,22 +177,10 @@ int32_t delay;
   MX_I2C1_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
-	
-  /* USER CODE BEGIN 2 */
-//			HAL_GPIO_WritePin(SPI3_rf_power_onoff_GPIO_Port,SPI3_rf_power_onoff_Pin,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_12,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_10,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(SPI3_rf_cs_GPIO_Port,SPI3_rf_cs_Pin,GPIO_PIN_RESET);	
-//			HAL_GPIO_WritePin(SPI3_rf_rfoff_GPIO_Port,SPI3_rf_rfoff_Pin,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(SPI3_rf_tx_GPIO_Port,SPI3_rf_tx_Pin,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(SPI3_rf_io_vreg_GPIO_Port,SPI3_rf_io_vreg_Pin,GPIO_PIN_RESET);	
-//		HAL_GPIO_WritePin(SPI3_rf_io_fifop_GPIO_Port,SPI3_rf_io_fifop_Pin,GPIO_PIN_RESET);
-//		HAL_GPIO_WritePin(SPI3_rf_io_fifo_GPIO_Port,SPI3_rf_io_fifo_Pin,GPIO_PIN_RESET);			
-	
-//	read_ap_param();
-	
+		
 	init_ap_param();
 	read_ap_param_flash();
+	rf_satt_init();
 
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);      //∆Ù∂Øsystick 2ms÷–∂œ
 	HAL_SYSTICK_Config(328125);
@@ -208,6 +200,9 @@ int32_t delay;
 			
 	read_firmware_rp_head();
 	read_firmware_sensor_head();
+
+	print_version();
+	
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -224,6 +219,8 @@ int32_t delay;
 		
 		if(ap_param_write_flash_flag)
 			write_ap_param_flash();
+
+		make_result_test_1000p();
 		
 //		ee_task_poll();
 
@@ -265,7 +262,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 26;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;

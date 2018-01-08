@@ -5,7 +5,7 @@
 #include "stm32f4xx_hal.h"
 
 
-#define AP_VERSION  0X0002
+#define AP_VERSION  0X0005
 
 
 #pragma pack(1)

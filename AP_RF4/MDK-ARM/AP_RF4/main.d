@@ -38,3 +38,5 @@ ap_rf4\main.o: ..\User\typedef_struct.h
 ap_rf4\main.o: ..\User\Ap_param\ap_param.h
 ap_rf4\main.o: ../Inc/eeprom.h
 ap_rf4\main.o: ../Inc/flash.h
+ap_rf4\main.o: ..\User\RF4\rf_hal.h
+ap_rf4\main.o: ..\User\Debug_uart\debug_uart.h

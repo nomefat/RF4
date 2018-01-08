@@ -245,11 +245,17 @@ void receive_rp_sensor_firmware(struct_ap_n1_protocol *ptr,int who)
 	if(p_n1_send_firmware_head->packet_syn==109)
 		i=i;
 	
-	if(ee_write_packet_syn != p_n1_send_firmware_head->packet_syn && ee_write_packet_syn!=0)  //假如N1发来的不是我需要的包序号 向N1索要需要的包序号
+	if(ee_write_packet_syn != p_n1_send_firmware_head->packet_syn)  //假如N1发来的不是我需要的包序号 向N1索要需要的包序号
 	{
 		  if(systerm_info.slot - rtc_time > 50) //相对于上一次发送 大于100ms 才会继续发送
 			{
 				rtc_time = systerm_info.slot;
+				if(p_n1_send_firmware_head->packet_syn == 0) //假如N1还是发送第0包  认为N1主动重新开始发送
+				{
+					ee_write_packet_syn = 0;
+					ee_write_addr_add = 0;
+					return;
+				}
 				p_n1_send_firmware_head->packet_syn =ee_write_packet_syn;
 				insert_to_n1_buff(&ptr->data[0],4,cmd);					
 			}
@@ -274,6 +280,7 @@ void receive_rp_sensor_firmware(struct_ap_n1_protocol *ptr,int who)
 		if(p_n1_send_firmware_head->packet_syn == 0)  //第0包 擦除对应的flash
 		{
 			ee_write_addr_add = 0;
+			__disable_irq() ;  //关总中断
 			HAL_FLASH_Unlock();
 			EraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
 			EraseInit.Banks = FLASH_BANK_2;
@@ -281,6 +288,15 @@ void receive_rp_sensor_firmware(struct_ap_n1_protocol *ptr,int who)
 			EraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_3;
 			HAL_FLASHEx_Erase(&EraseInit,&SectorError);
 			HAL_FLASH_Lock();
+			if(who == N1_SEND_RP_FIRMWARE)   //rp固件
+			{
+				ap_param.rp_version = FIRM_HEAD_ERROR;
+			}
+				else if(who == N1_SEND_S_FIRMWARE)   //sensor固件
+			{
+				ap_param.sensor_version = FIRM_HEAD_ERROR;	
+			}
+			__enable_irq() ; //开总中断
 		}
 
 		if(0 == write_bin_flash(begin_address + ee_write_addr_add,firmware_head + p_n1_send_firmware_head->packet_syn*37,37)) //写flash成功
@@ -369,6 +385,7 @@ void receive_rp_sensor_firmware(struct_ap_n1_protocol *ptr,int who)
 
 		if(p_n1_send_firmware_head->packet_syn == p_n1_send_firmware_head->packet_count) //传输完成
 		{
+			ee_write_packet_syn = 0;
 			ee_write_addr_add = 0;
 			if(who == N1_SEND_RP_FIRMWARE)
 			{

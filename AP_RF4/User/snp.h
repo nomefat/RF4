@@ -264,6 +264,7 @@ typedef struct _SNP_STATE_PACKET_SENSOR_t
 	
 	u8_t        uiSlot;				// 0x18
 	u16_t       uiBindId;			// 0x19
+  u8_t        ucFilterFlag;                        //Sensor状态包过滤标志  0:不过滤  其它值:不处理		 
 	u8_t		uiCrc;				// 0x1B
     
 } SNP_STATE_PACKET_SENSOR_t;

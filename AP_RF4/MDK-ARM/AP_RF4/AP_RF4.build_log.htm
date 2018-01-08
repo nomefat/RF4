@@ -22,28 +22,48 @@ Dialog DLL:      TCM.DLL V1.14.14.0
  
 <h2>Project:</h2>
 E:\นคื๗\AP_4RF\AP_RF4\MDK-ARM\AP_RF4.uvprojx
-Project File Date:  11/13/2017
+Project File Date:  12/29/2017
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 3 (build 300)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'AP_RF4'
-compiling update_s_rp.c...
-..\User\RF4\rf_hal.h(46): warning:  #1295-D: Deprecated declaration rf_io_tx_4 - give arg types
+compiling main.c...
+..\User\RF4\rf_hal.h(59): warning:  #1295-D: Deprecated declaration rf_satt_init - give arg types
+  void rf_satt_init();
+..\User\RF4\rf_hal.h(60): warning:  #1295-D: Deprecated declaration rf_io_tx_4 - give arg types
   void rf_io_tx_4();
-../Inc/debug.h(33): warning:  #1295-D: Deprecated declaration re_start_sensor_event_record - give arg types
-  void re_start_sensor_event_record();
-../Inc/debug.h(35): warning:  #1295-D: Deprecated declaration debug_sensor_event_to_str - give arg types
-  void debug_sensor_event_to_str();
-../Inc/update_s_rp.h(35): warning:  #1295-D: Deprecated declaration enable_sensor_update - give arg types
-  void enable_sensor_update();
-../Inc/update_s_rp.h(36): warning:  #1295-D: Deprecated declaration enable_rp_update - give arg types
-  void enable_rp_update();
-..\Src\update_s_rp.c: 5 warnings, 0 errors
+..\User\RF4\rf_hal.h(62): warning:  #1295-D: Deprecated declaration rf_scan_channel - give arg types
+  void rf_scan_channel();
+..\User\Debug_uart\debug_uart.h(9): warning:  #1295-D: Deprecated declaration print_version - give arg types
+  void print_version();
+../Src/main.c(53): warning:  #1295-D: Deprecated declaration to_n1_buff_handle - give arg types
+  extern void to_n1_buff_handle();
+../Src/main.c(54): warning:  #1295-D: Deprecated declaration start_from_n1_dma_receive - give arg types
+  extern void start_from_n1_dma_receive();
+../Src/main.c(55): warning:  #1295-D: Deprecated declaration start_from_gprs_dma_receive - give arg types
+  extern void start_from_gprs_dma_receive();
+../Src/main.c(56): warning:  #1295-D: Deprecated declaration start_from_debug_dma_receive - give arg types
+  extern void start_from_debug_dma_receive();
+../Src/main.c(57): warning:  #1295-D: Deprecated declaration gprs_main_call - give arg types
+  extern void gprs_main_call();
+../Src/main.c(60): warning:  #1295-D: Deprecated declaration led_1_close - give arg types
+  extern void led_1_close();
+../Src/main.c(62): warning:  #1295-D: Deprecated declaration rf_manage - give arg types
+  extern void rf_manage();
+../Src/main.c(73): warning:  #1295-D: Deprecated declaration read_firmware_rp_head - give arg types
+  extern void read_firmware_rp_head();
+../Src/main.c(74): warning:  #1295-D: Deprecated declaration read_firmware_sensor_head - give arg types
+  extern void read_firmware_sensor_head();
+../Src/main.c(75): warning:  #1295-D: Deprecated declaration make_result_test_1000p - give arg types
+  extern void make_result_test_1000p();
+../Src/main.c(148): warning:  #177-D: variable "delay" was declared but never referenced
+  int32_t delay;
+../Src/main.c: 15 warnings, 0 errors
 linking...
-Program Size: Code=46536 RO-data=2152 RW-data=756 ZI-data=62436  
+Program Size: Code=49904 RO-data=2700 RW-data=856 ZI-data=62448  
 FromELF: creating hex file...
 After Build - User command #1: C:/Keil_v5/ARM/ARMCC/bin/fromelf.exe --bin -o ./AP_RF4/AP_RF4.bin ./AP_RF4/AP_RF4.axf
-"AP_RF4\AP_RF4.axf" - 0 Error(s), 5 Warning(s).
+"AP_RF4\AP_RF4.axf" - 0 Error(s), 15 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -61,7 +81,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:11
+Build Time Elapsed:  00:00:17
 </pre>
 </body>
 </html>

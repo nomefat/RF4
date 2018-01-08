@@ -179,7 +179,7 @@ write:
 		crc = HAL_CRC_Calculate(&hcrc,(uint32_t *)flash_buff,sizeof(struct_ap_param)/4+1);
 		if(crc == p_head2->crc)
 		{
-//			memcpy(&ap_param,flash_buff,sizeof(struct_ap_param));
+//			memcpy(&ap_param,flash_buff,sizeof(struct_ap_param)); ddd
 			ap_param_write_flash_flag = 0;
 			return;
 		}
@@ -195,6 +195,9 @@ int32_t write_bin_flash(uint32_t address,uint8_t *pdata,uint32_t size)
 {
 	int i = 0;
 	uint8_t *p_readdata = (uint8_t *)address;
+	
+	if(address < 0x08004000)
+		return -1;
 	
 	HAL_FLASH_Unlock();
 	for(i=0;i<size;i++)

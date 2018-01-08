@@ -1,0 +1,27 @@
+// SNP协议状态(事件)包结构.
+// SNP协议检测器状态包结构.
+typedef struct _SNP_STATE_PACKET_SENSOR_t
+{
+	SNP_PHR_t	sPhr;
+	
+	u16_t		uiFwVer;			// 0x8	-	当前固件版本.
+	u16_t		uiHwVer;			// 0xA	-	本机硬件版本.
+	u8_t		ucVolt;				// 0xC	-	本机的电源电压测量值: ADC / 16.
+	u16_t		uiRpId;				// 0xD	-	中继器的'RF-ID'.  由上一级填写
+	u16_t		uiSubData;			// 0xF	-	代替包数据, 成功编程FLASH的次数.
+
+	u32_t		ulFactoryId;		        // 0x11	-	本机的'factory ID'.
+	u8_t		uiRssi;				// 0x15 -   检测器收到的RF信号参数，随状态包发送
+	u8_t            uiQuality;			// 0x16 -   链路质量  + 1bit CRC
+
+	struct{							// 0x17
+			u8_t	uiGrade:3,		// 检测器跟的同步包级别 与上一级的级别一致
+                                uiChannel:5;
+              };
+
+	u8_t        uiSlot;				// 0x18
+	u16_t       uiBindId;			        // 0x19
+        u8_t        ucFilterFlag;                        //Sensor状态包过滤标志  0:不过滤  其它值:不处理
+	u8_t	    uiCrc;				// 0x1B
+    
+} SNP_STATE_PACKET_SENSOR_t;

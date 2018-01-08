@@ -53,6 +53,8 @@ char at_cmd_conn[50];
 
 extern struct_ap_param ap_param;
 
+int gprs_print_rx_tx_data_enable = 0;   //使能gprs收发数据打印功能
+
 struct struct_gprs_stat{
 	char ati_ok;
 	char creg_ok;       
@@ -66,6 +68,7 @@ struct struct_gprs_stat{
 		int gprs_send_error_timeout;   // tcp发送数据没有成功计数	
 	}con_client[3];
 	char send_data_id;       //记录那个链接 发送数据
+	unsigned char packet_seq;
 	unsigned short send_data_num;  //记录连接发送的数据个数
 	unsigned char *send_data_buff;	
 	char check_id;      //查询那个连接 发送成功字节个数
@@ -264,13 +267,13 @@ void gprs_at_init(void)
 	gprs_uart_send_string(AT_CMD_AT_QIMUX);	  //配置为多链接模式
 	i = 200000;
 	while(i--);
-	gprs_uart_send_string("ATE1\r\n");	
+	gprs_uart_send_string("ATE0\r\n");	
 }
 
 void gprs_reboot(void)
 {
 	
-	gprs_stat.reboot_flag = 1;
+	gprs_stat.reboot_flag = GPRS_REBOOT_SETP0;
 /*	gprs_off();
 	i = 100000;
 	while(i--);
@@ -392,23 +395,17 @@ int gprs_str_cmd_handle(char *pstr)
 			case GPRS_CMD_SEND_READY: 
 				gprs_stat.con_client[gprs_stat.send_data_id].send_no_timeout	= 0;			
 				HAL_UART_Transmit_DMA(&huart2,gprs_stat.send_data_buff,gprs_stat.send_data_num);		
-				gprs_stat.send_data_id = -1;	
-				gprs_stat.send_data_num = 0;
-				gprs_stat.con_client[0].send_no_times = 0;
-			
-				if(gprs_stat.send_data_id == 0)
-				{
-					
-					
-#ifdef GPRS_DEBUG_PRINT
 
+				gprs_stat.con_client[0].send_no_times = 0;
+
+				if(gprs_print_rx_tx_data_enable >0)
+				{
 					sprintf(gprs_debug_buff,"gprs: client_0 send data %d\r\n",gprs_stat.send_data_num);
 					debug(gprs_debug_buff);
-
-#endif			
-
-
 				}
+				gprs_stat.send_data_id = -1;	
+				gprs_stat.send_data_num = 0;		
+
 				break;
 			case GPRS_CMD_REVISION:
 				gprs_stat.ati_ok = 1;
@@ -497,12 +494,13 @@ int gprs_str_cmd_handle(char *pstr)
 			break;
 			case	GPRS_CMD_RECEIVE:
 				lengh = gprs_str_to_int(&gprs_cmd_param[1][0]);
-#ifdef GPRS_DEBUG_PRINT
 
+				if(gprs_print_rx_tx_data_enable >0)
+				{
 					sprintf(gprs_debug_buff,"gprs:receive data %d\r\n",lengh);
 					debug(gprs_debug_buff);
-
-#endif			
+				}
+			
 				return lengh;
 			
 			break;
@@ -539,10 +537,10 @@ void gprs_get_cmd_param(char *pstr , unsigned short length)
 				pstr[++i] = 0;
 
 			n1_data_length = gprs_str_cmd_handle(&pstr[strat_string]);
-			if(n1_data_length>0)
-			{
-				insert_to_n1_buff(&pstr[i+1+10],pstr[i+1+8],AP_GPRS_SERVER_DATA);
-			}
+//			if(n1_data_length>0)
+//			{
+//				insert_to_n1_buff(&pstr[i+1+10],pstr[i+1+8],AP_GPRS_SERVER_DATA);
+//			}
 			gprs_cmd_param_num = 0;
 			flag_param = 0;
 			strat_string = i+1;
@@ -670,7 +668,7 @@ void gprs_main_call()
 	static int send_cmd_times = 0;   //向gprs模块发送命令计数
 	static int send_cmd_timeout = 0;   //向gprs模块发送命令后 超时计数	
 	static int get_link_stat = 0;
-	
+	int delay = 0;
 	gprs_data_handle();
 
 	if(gprs_sec_flag < 1) //1sec进入下面一次
@@ -706,6 +704,7 @@ void gprs_main_call()
 		if(timeout>90)
 			gprs_stat.reboot_flag = GPRS_REBOOT_SETP0;      //关GSM电源
 		gprs_uart_send_string(AT_CMD_ATI);  
+		 
 		return;
 	}
 	if(gprs_stat.creg_ok == 0)                           //命令2
@@ -793,13 +792,37 @@ void gprs_main_call()
 
 }
 
-
+// data[0] 本包数据长度  data[1]总包数   data[2345] N1ID data[6] 当前包序号 data[7] 开始是透传数据
+// 组包
 void send_gprs_data(void *pdata,int len)
 {
-	memcpy(n1_to_server_data,pdata,len);
-	gprs_stat.send_data_id = 0;
-	gprs_stat.send_data_buff = n1_to_server_data;
-	gprs_stat.send_data_num = len;	
+	unsigned char *pd = (unsigned char *)pdata;
+	
+//	if(gprs_stat.send_data_id != -1 && gprs_stat.send_data_num >0)  //缓冲里有数据
+//		return;
+	
+	if(pd[6] == 0)  //收到第0包 是个新的开始 刷新包数据
+	{
+		gprs_stat.packet_seq = 0;
+		gprs_stat.send_data_num = 0;		
+	}
+	else if(pd[6] != gprs_stat.packet_seq) //N1来的包序号 对不上已经保存的包序号 不接受组包
+	{
+		return;
+	}
+	//第0包  或者 N1发来的包序号等于需要的包序号
+	memcpy(n1_to_server_data+gprs_stat.send_data_num,&pd[7],pd[0]-8);
+	gprs_stat.send_data_num += pd[0]-8;
+	gprs_stat.packet_seq++;
+	
+	if(gprs_stat.packet_seq == pd[1]) //已经是完整的包
+	{
+		gprs_stat.send_data_id = 0;
+		gprs_stat.send_data_buff = n1_to_server_data;
+			
+	}
+
+
 }
 
 

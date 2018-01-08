@@ -17,19 +17,41 @@ extern SPI_HandleTypeDef hspi5;
 void rf_io_tx(SPI_HandleTypeDef* hspi);
 void rf_cmd_tx(SPI_HandleTypeDef* hspi);
 void rf_rx(SPI_HandleTypeDef* hspi);
+void rf_cs_off(SPI_HandleTypeDef* hspi);
+
+
 
 extern void rf_rx_data_handle(int index);
-
+extern struct_systerm_info systerm_info;
 
 struct_rf_stat rf_stat[4];
 
-SPI_HandleTypeDef* rf_index[] = {&hspi4,&hspi1,&hspi5,&hspi3};
+SPI_HandleTypeDef* rf_index[] = {RF4,RF3,RF2,RF1};
 
 uint8_t rf_sec_flag = 0;         //秒点标志 由同步包中断置1
 
+uint8_t rf_scan_channel_enable = 0;  //单载波扫描通道使能
+
+uint8_t rf_send_1000_p_enable = 0;   //发送1000包使能
+
+unsigned char rf_send_data[15] = {0x0f,0x00,0x00,0x00,0x00,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e};
 
 uint8_t rf_rx_buff[4][256];
 
+uint32_t syn_send_error = 0;
+
+
+struct_test_1000p_data test_1000p_data=
+{
+	sizeof(struct_test_1000p_data),
+	0xaaaa5555,
+	1000,
+	0,
+};
+
+
+
+extern char gprs_debug_buff[256];
 
 extern struct_ap_param ap_param;
 
@@ -569,20 +591,29 @@ void rf_io_tx_4()
 	
 	uint32_t tme[4] = {0,0,0,0};
 	
+	if(rf_stat[1].mode == RF_WORK	&& rf_stat[1].reg_init_stat == RF_REG_INIT_OK)	
+	{
+		HAL_GPIO_WritePin(SPI3_rf_tx_GPIO_Port,SPI3_rf_tx_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SPI3_rf_tx_GPIO_Port,SPI3_rf_tx_Pin,GPIO_PIN_SET);
+	}
+
+	if(rf_stat[2].mode == RF_WORK	&& rf_stat[2].reg_init_stat == RF_REG_INIT_OK)
+	{
+		HAL_GPIO_WritePin(SPI5_rf_tx_GPIO_Port,SPI5_rf_tx_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SPI5_rf_tx_GPIO_Port,SPI5_rf_tx_Pin,GPIO_PIN_SET);
+	}
 	
-	HAL_GPIO_WritePin(SPI3_rf_tx_GPIO_Port,SPI3_rf_tx_Pin,GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SPI3_rf_tx_GPIO_Port,SPI3_rf_tx_Pin,GPIO_PIN_SET);
-
-
-	HAL_GPIO_WritePin(SPI5_rf_tx_GPIO_Port,SPI5_rf_tx_Pin,GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SPI5_rf_tx_GPIO_Port,SPI5_rf_tx_Pin,GPIO_PIN_SET);
-
-	HAL_GPIO_WritePin(SPI1_rf_tx_GPIO_Port,SPI1_rf_tx_Pin,GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SPI1_rf_tx_GPIO_Port,SPI1_rf_tx_Pin,GPIO_PIN_SET);
-
-	HAL_GPIO_WritePin(SPI4_rf_tx_GPIO_Port,SPI4_rf_tx_Pin,GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(SPI4_rf_tx_GPIO_Port,SPI4_rf_tx_Pin,GPIO_PIN_SET);
-
+	if(rf_stat[3].mode == RF_WORK	&& rf_stat[3].reg_init_stat == RF_REG_INIT_OK)
+	{
+		HAL_GPIO_WritePin(SPI1_rf_tx_GPIO_Port,SPI1_rf_tx_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SPI1_rf_tx_GPIO_Port,SPI1_rf_tx_Pin,GPIO_PIN_SET);
+	}
+	if(rf_stat[0].mode == RF_WORK	&& rf_stat[0].reg_init_stat == RF_REG_INIT_OK)
+	{
+		HAL_GPIO_WritePin(SPI4_rf_tx_GPIO_Port,SPI4_rf_tx_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SPI4_rf_tx_GPIO_Port,SPI4_rf_tx_Pin,GPIO_PIN_SET);
+	}
+	
 	time = SysTick->VAL;
 	
 	tickstart = HAL_GetTick();
@@ -631,10 +662,16 @@ void rf_io_tx_4()
 			break;
 		
 		if(HAL_GetTick()-tickstart>0)
+		{
+			syn_send_error++;
 			break;
+		}
 		
 		if(SysTick->VAL < 1000)
+		{
+			syn_send_error++;
 			break;
+		}
 	}
 	
 	time = time - SysTick->VAL;
@@ -711,6 +748,10 @@ void rf_power_reset(SPI_HandleTypeDef hspi1)
 void rf_set_channel(SPI_HandleTypeDef* hspi, uint16_t uiChannel )
 {
     uint16_t   uiReg;
+	
+		CC2520_send_cmd(hspi,CC2520_INS_SRFOFF);	
+		CC2520_send_cmd(hspi,CC2520_INS_SRXON);		
+	
     if(uiChannel <16)  
 			uiReg       =   uiChannel + ( uiChannel << 2u ) + 0x0Bu;		// uiChannel * 5u + 0x4165.
 		else
@@ -720,6 +761,7 @@ void rf_set_channel(SPI_HandleTypeDef* hspi, uint16_t uiChannel )
 		}
     CC2520_set_reg(hspi,CC2520_FREQCTRL,uiReg);
 
+		CC2520_send_cmd(hspi,CC2520_INS_STXON);
 }
 
 
@@ -732,7 +774,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if((GPIOF->IDR & (1<<4)) && (GPIOF->IDR & (1<<5)))
 		{
 			HAL_GPIO_WritePin(SPI5_led_rf_send_GPIO_Port,SPI5_led_rf_send_Pin,GPIO_PIN_RESET);
-			rf_rx(rf_index[2]);
+			rf_rx(&hspi5);
 		}
 	}
 	else if(GPIO_PIN_2 == GPIO_Pin)
@@ -740,7 +782,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if((GPIOI->IDR & (1<<2)) && (GPIOI->IDR & (1<<3)))
 		{
 			HAL_GPIO_WritePin(SPI3_led_rf_send_GPIO_Port,SPI3_led_rf_send_Pin,GPIO_PIN_RESET);
-			rf_rx(rf_index[3]);		
+			rf_rx(&hspi3);		
 		}
 	}
 	else if(GPIO_PIN_10 == GPIO_Pin)
@@ -748,7 +790,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if((GPIOB->IDR & (1<<10)) && (GPIOB->IDR & (1<<11)))
 		{
 			HAL_GPIO_WritePin(SPI4_led_rf_send_GPIO_Port,SPI4_led_rf_send_Pin,GPIO_PIN_RESET);
-			rf_rx(rf_index[0]);
+			rf_rx(&hspi4);
 		}
 	}
 	else if(GPIO_PIN_12 == GPIO_Pin)
@@ -756,7 +798,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if((GPIOF->IDR & (1<<12)) && (GPIOF->IDR & (1<<11)))
 		{
 			HAL_GPIO_WritePin(SPI1_led_rf_send_GPIO_Port,SPI1_led_rf_send_Pin,GPIO_PIN_RESET);
-			rf_rx(rf_index[1]);		
+			rf_rx(&hspi1);		
 		}
 	}	
 }
@@ -769,7 +811,7 @@ void rf_rx(SPI_HandleTypeDef* hspi)
 	
 	uint8_t data = CC2520_INS_RXBUF;
 
-	
+	//spi片选
 	if( hspi == &hspi3) 
 		HAL_GPIO_WritePin(SPI3_rf_cs_GPIO_Port,SPI3_rf_cs_Pin,GPIO_PIN_RESET);	
 	else if(hspi == &hspi5) 
@@ -779,53 +821,50 @@ void rf_rx(SPI_HandleTypeDef* hspi)
 	else if(hspi == &hspi4) 
 		HAL_GPIO_WritePin(SPI4_rf_cs_GPIO_Port,SPI4_rf_cs_Pin,GPIO_PIN_RESET);	
 	
-	ret = HAL_SPI_Transmit(hspi,&data,1,1);
-	ret = HAL_SPI_Receive(hspi,&data,1,1);
+	ret = HAL_SPI_Transmit(hspi,&data,1,1); //发送读buf 命令
+	ret = HAL_SPI_Receive(hspi,&data,1,1); //读一个字节，buf长度
 	
 
-	if(hspi == &hspi4)	
+	if(hspi == RF1)	
 	{
 		rf_rx_buff[0][0] = data;
 //		HAL_SPI_Receive_DMA(hspi,&rf_rx_buff[0][1],data);	
 		ret = HAL_SPI_Receive(hspi,&rf_rx_buff[0][1],data,1);
-		HAL_GPIO_WritePin(SPI4_led_rf_send_GPIO_Port,SPI4_led_rf_send_Pin,GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(SPI4_rf_cs_GPIO_Port,SPI4_rf_cs_Pin,GPIO_PIN_SET);		
+		//从中断到这里(接收别的AP的同步包)  58US 
+		rf_cs_off(hspi);		
 		rf_rx_data_handle(0);
-//		sprintf(debug_send_buff,"d1 %d %x %d %d %d %d %d %d\r\n",rdata1[0],rdata1[1],rdata1[2],rdata1[3],rdata1[4],rdata1[5],rdata1[6],rdata1[7]);
-//		debug_uart_send_string(debug_send_buff);
+		//从中断到这里(接收别的AP的同步包)   65US
+		HAL_GPIO_WritePin(SPI4_led_rf_send_GPIO_Port,SPI4_led_rf_send_Pin,GPIO_PIN_SET);	
 	}
-	else if(hspi == &hspi1)
+	else if(hspi == RF2)
 	{
 		rf_rx_buff[1][0] = data;
 //		HAL_SPI_Receive_DMA(hspi,&rdata2[1],data);	
 		ret = HAL_SPI_Receive(hspi,&rf_rx_buff[1][1],data,1);	
 		HAL_GPIO_WritePin(SPI1_led_rf_send_GPIO_Port,SPI1_led_rf_send_Pin,GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(SPI1_rf_cs_GPIO_Port,SPI1_rf_cs_Pin,GPIO_PIN_SET);			
+		rf_cs_off(hspi);		
 		rf_rx_data_handle(1);
-//		sprintf(debug_send_buff,"d2 %d %x %d\r\n",rdata2[0],rdata2[1],rdata2[2]);
-//		debug_uart_send_string(debug_send_buff);		
+	
 	}
-	if(hspi == &hspi5)	
+	else if(hspi == RF3)	
 	{
 		rf_rx_buff[2][0] = data;
 //		HAL_SPI_Receive_DMA(hspi,&rf_rx_buff[2][1],data);	
 		ret = HAL_SPI_Receive(hspi,&rf_rx_buff[2][1],data,1);
 		HAL_GPIO_WritePin(SPI5_led_rf_send_GPIO_Port,SPI5_led_rf_send_Pin,GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(SPI5_rf_cs_GPIO_Port,SPI5_rf_cs_Pin,GPIO_PIN_SET);	
+		rf_cs_off(hspi);	
 		rf_rx_data_handle(2);		
-//		sprintf(debug_send_buff,"d1 %d %x %d %d %d %d %d %d\r\n",rdata1[0],rdata1[1],rdata1[2],rdata1[3],rdata1[4],rdata1[5],rdata1[6],rdata1[7]);
-//		debug_uart_send_string(debug_send_buff);
+
 	}
-	else if(hspi == &hspi3)
+	else if(hspi == RF4)
 	{
 		rf_rx_buff[3][0] = data;
 //		HAL_SPI_Receive_DMA(hspi,&rdata2[1],data);	
 		ret = HAL_SPI_Receive(hspi,&rf_rx_buff[3][1],data,1);	
 		HAL_GPIO_WritePin(SPI3_led_rf_send_GPIO_Port,SPI3_led_rf_send_Pin,GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(SPI3_rf_cs_GPIO_Port,SPI3_rf_cs_Pin,GPIO_PIN_SET);	
+		rf_cs_off(hspi);
 		rf_rx_data_handle(3);		
-//		sprintf(debug_send_buff,"d2 %d %x %d\r\n",rdata2[0],rdata2[1],rdata2[2]);
-//		debug_uart_send_string(debug_send_buff);		
+	
 	}
 	
 		
@@ -878,8 +917,8 @@ void rf_rx_voerflow_check()
 			timeout[0]++;
 			if(timeout[0]>3){
 				timeout[0] = 0;
-				CC2520_send_cmd(rf_index[2],CC2520_INS_SFLUSHRX );
-				CC2520_send_cmd(rf_index[2],CC2520_INS_SFLUSHRX ); 
+				CC2520_send_cmd(rf_index[1],CC2520_INS_SFLUSHRX );
+				CC2520_send_cmd(rf_index[1],CC2520_INS_SFLUSHRX ); 
 			}
 		}	
 		else
@@ -891,8 +930,8 @@ void rf_rx_voerflow_check()
 			timeout[1]++;
 			if(timeout[1]>3){
 				timeout[1] = 0;			
-			CC2520_send_cmd(rf_index[3],CC2520_INS_SFLUSHRX );
-			CC2520_send_cmd(rf_index[3],CC2520_INS_SFLUSHRX ); 
+			CC2520_send_cmd(rf_index[2],CC2520_INS_SFLUSHRX );
+			CC2520_send_cmd(rf_index[2],CC2520_INS_SFLUSHRX ); 
 			}
 		}		
 		else
@@ -903,8 +942,8 @@ void rf_rx_voerflow_check()
 			timeout[2]++;
 			if(timeout[2]>3){
 				timeout[2] = 0;			
-			CC2520_send_cmd(rf_index[0],CC2520_INS_SFLUSHRX );
-			CC2520_send_cmd(rf_index[0],CC2520_INS_SFLUSHRX ); 
+			CC2520_send_cmd(rf_index[3],CC2520_INS_SFLUSHRX );
+			CC2520_send_cmd(rf_index[3],CC2520_INS_SFLUSHRX ); 
 			}
 		}	
 		else
@@ -915,14 +954,138 @@ void rf_rx_voerflow_check()
 			timeout[3]++;
 			if(timeout[3]>3){
 				timeout[3] = 0;				
-			CC2520_send_cmd(rf_index[1],CC2520_INS_SFLUSHRX );
-			CC2520_send_cmd(rf_index[1],CC2520_INS_SFLUSHRX ); 
+			CC2520_send_cmd(rf_index[0],CC2520_INS_SFLUSHRX );
+			CC2520_send_cmd(rf_index[0],CC2520_INS_SFLUSHRX ); 
 			}
 		}	
 		else
 			timeout[3] = 0;
 }
 
+void rf_satt_init()
+{
+	int i;
+	for(i=0;i<4;i++)	
+	{
+		rf_stat[i].mode = RF_DEFAULT_MODE;		
+	}
+	
+}
+	 int channel = 0;
+void rf_scan_channel()
+{
+
+	int i = 0;
+	
+	struct _led
+	{
+		GPIO_TypeDef * port;
+		uint32_t pin;
+	}struct_led[4] = {
+	general_led_1_GPIO_Port,general_led_1_Pin,
+	general_led_2_GPIO_Port,general_led_2_Pin,
+	general_led_3_GPIO_Port,general_led_3_Pin,
+	general_led_4_GPIO_Port,general_led_4_Pin};
+	
+  if(rf_scan_channel_enable != 1)
+		return;
+	
+	if(systerm_info.slot%2048 == 1)
+	{
+		for(i=0;i<4;i++)
+		{
+			if(rf_stat[i].mode == ENABLE_NOMODULATE_CARRIER || rf_stat[i].mode == ENABLE_MODULATE_CARRIER)
+			{
+				rf_set_channel(rf_index[i],channel);
+				HAL_GPIO_TogglePin(struct_led[i].port,struct_led[i].pin);
+				sprintf(gprs_debug_buff,"rf scan ch=%d\r\n",channel);
+				debug_uart_send_string(gprs_debug_buff);					
+			}
+		}
+			
+		channel++;
+		if(channel >15)
+			channel = 0;
+
+		while(systerm_info.slot%2048 == 1);
+	}
+
+}
+
+
+void rf_send_1000p()
+{
+	uint32_t *packet_seq = (uint32_t *)&rf_send_data[1];
+	
+	if(systerm_info.slot%32 == 1)
+	{
+		if(rf_send_1000_p_enable & EN_RF1 && rf_stat[0].mode == RF_IDLE && rf_stat[0].rf_power_stat == RF_POWER_WORK)
+		{
+			if((*packet_seq)< 1000)
+			{
+				
+				rf_write_buff(RF1,rf_send_data,rf_send_data[0]);
+				
+				CC2520_send_cmd(RF1,CC2520_INS_STXON);
+				HAL_GPIO_TogglePin(general_led_1_GPIO_Port,general_led_1_Pin);
+				sprintf(gprs_debug_buff,"rf1_send seq=%d\r\n",*packet_seq);
+				debug_uart_send_string(gprs_debug_buff);	
+				(*packet_seq)++;				
+				while(systerm_info.slot%32 == 1);
+			}
+			
+		}
+		else if(rf_send_1000_p_enable & EN_RF2 && rf_stat[1].mode == RF_IDLE && rf_stat[1].rf_power_stat == RF_POWER_WORK)
+		{
+			if((*packet_seq)< 1000)
+			{
+				
+				rf_write_buff(RF2,rf_send_data,rf_send_data[0]);
+				
+				CC2520_send_cmd(RF2,CC2520_INS_STXON);
+				HAL_GPIO_TogglePin(general_led_2_GPIO_Port,general_led_2_Pin);
+				sprintf(gprs_debug_buff,"rf2_send seq=%d\r\n",*packet_seq);
+				debug_uart_send_string(gprs_debug_buff);	
+				(*packet_seq)++;
+				while(systerm_info.slot%32 == 1);
+			}
+			
+		}
+		else if(rf_send_1000_p_enable & EN_RF3 && rf_stat[2].mode == RF_IDLE && rf_stat[2].rf_power_stat == RF_POWER_WORK)
+		{
+
+			if((*packet_seq)< 1000)
+			{
+			
+				rf_write_buff(RF3,rf_send_data,rf_send_data[0] );
+
+				CC2520_send_cmd(RF3,CC2520_INS_STXON);
+				HAL_GPIO_TogglePin(general_led_3_GPIO_Port,general_led_3_Pin);
+				sprintf(gprs_debug_buff,"rf3_send seq=%d\r\n",*packet_seq);
+				debug_uart_send_string(gprs_debug_buff);		
+				(*packet_seq)++;				
+				while(systerm_info.slot%32 == 1);
+			}
+			
+		}
+		else if(rf_send_1000_p_enable & EN_RF4 && rf_stat[3].mode == RF_IDLE && rf_stat[3].rf_power_stat == RF_POWER_WORK)
+		{
+			if((*packet_seq)< 1000)
+			{
+				
+				rf_write_buff(RF4,rf_send_data,rf_send_data[0] );
+
+				CC2520_send_cmd(RF4,CC2520_INS_STXON);
+				HAL_GPIO_TogglePin(general_led_4_GPIO_Port,general_led_4_Pin);
+				sprintf(gprs_debug_buff,"rf4_send seq=%d\r\n",*packet_seq);
+				debug_uart_send_string(gprs_debug_buff);				
+				(*packet_seq)++;				
+				while(systerm_info.slot%32 == 1);
+			}
+			
+		}		
+	}
+}
 
 
 void rf_manage()
@@ -930,10 +1093,14 @@ void rf_manage()
 	int i;
 	
 	uint8_t *p_chanel = (uint8_t *)&ap_param.ap_channel;
+
+	rf_scan_channel();
+	rf_send_1000p();
 	
 	if(rf_sec_flag < 1) //1sec进入下面一次
 		return;
-	
+
+
 	
 	rf_sec_flag = 0;
 	
@@ -951,12 +1118,10 @@ void rf_manage()
 				else
 				{
 					rf_stat[i].rf_power_stat = RF_POWER_WORK;
-					if(rf_stat[i].mode != RF_WORK)
+					rf_set_channel(rf_index[i],p_chanel[i]);
+					if(rf_stat[i].mode == ENABLE_NOMODULATE_CARRIER || rf_stat[i].mode == ENABLE_MODULATE_CARRIER )
 						rf_cmd_tx(rf_index[i]);
-					else
-					{
-						rf_set_channel(rf_index[i],p_chanel[i]);//
-					}
+
 				}
 					
 
@@ -975,6 +1140,11 @@ void rf_manage()
 	
 	
 }
+
+
+
+
+
 
 
 extern char gprs_debug_buff[256];

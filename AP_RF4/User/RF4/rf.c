@@ -69,11 +69,11 @@ extern SPI_HandleTypeDef hspi5;
 extern struct_update_s_rp_manage update_s_rp_manage ;
 
 void ApPacketsetting(u16_t uiCurSlotNr,u8_t ucCurPacketerNr);
-
+void rf_rev_1000p_test(int index);
 
 
 int test;
-
+int enable_print_sensor_event = 0;
 
 void clear_recode();
 uint8_t get_slot_num();
@@ -101,7 +101,7 @@ void rf_send_syn_packet(void)
 	syn_packet.ucCtrlBm = 0x07;
 	syn_packet.uiRemainSlot = 512-(systerm_info.slot%512);
 
-//	syn_packet.uiCrc = 0x88;
+
 	
 				
 	if(syn_packet.sPhr.ucSerNr%8 == 0)  //秒点
@@ -110,27 +110,25 @@ void rf_send_syn_packet(void)
 		if(syn_packet.ucCurSecNr>29)
 			syn_packet.ucCurSecNr = 0;
 		
-		syn_packet.ucCtrlBm = 0x06;
+		syn_packet.ucCtrlBm = 0x06;   //秒点标志位
 		
 		if(sensor_rp_param.ParaFram.uiCmd !=0)  //有新的snesor 或者 rp参数
 		{
 			memcpy(&syn_packet.uiCmd,&sensor_rp_param.ParaFram.uiCmd,14);
-			syn_packet.uiBindId = ap_param.band_id;
 			syn_packet.sPhr.ucSensorMode = sensor_rp_param.ucSensorMode;
 			sensor_rp_param.ParaFram.uiCmd = 0;
 			syn_packet.sPhr.ucType |= 1<<4;
 			
 		}
-		else
+		else 
 		{
 			memset(&syn_packet.uiCmd,0,14);
-			syn_packet.uiBindId = ap_param.band_id;
 			syn_packet.sPhr.ucSensorMode = 0;
 			syn_packet.sPhr.ucType &= ~(1<<4);
 		}
 	}
 	
-	
+	syn_packet.uiBindId = ap_param.band_id;	
 	
 	
 
@@ -366,10 +364,12 @@ void rf_send_ack_packet(int slot)
 
 		
 		rf_io_tx_4();		
- 
-		sprintf(gprs_debug_buff,"send_ack:s=%d slot=%d %X ack_num=%d\r\n",systerm_info.slot/get_slot_num(),slot,s_sApAckPacket[slot].ulSlotBm,ack_num);
-		debug_uart_send_string(gprs_debug_buff);
-		
+
+		if(enable_print_sensor_event > 0)	
+		{			
+			sprintf(gprs_debug_buff,"send_ack:s=%d slot=%d %X ack_num=%d\r\n",systerm_info.slot/get_slot_num(),slot,s_sApAckPacket[slot].ulSlotBm,ack_num);
+			debug_uart_send_string(gprs_debug_buff);
+	  }
 		s_sApAckPacket[slot].ulSlotBm=0;
 		uiIndex[slot]=0;		
 		memset(s_sApAckPacket[slot].aucSerNr,0,sizeof(s_sApAckPacket[slot].aucSerNr));  //2013 7/25 lhj
@@ -493,23 +493,34 @@ void rf_rx_data_handle(int index)
 	SNP_SEN_MODE_B_PACKET_t *ptr_s_event = (SNP_SEN_MODE_B_PACKET_t *)&rf_rx_buff[index];
 	
 	uint8_t slot = systerm_info.slot%get_slot_num();
-	
+
 	if((rf_rx_buff[index][rf_rx_buff[index][0]] & 0x80 )!= 0x80)
-		return;
+		return;	
+	
+	rf_rev_1000p_test(index);
+	
+	if(ptr->uiDevId == 0x01a0)
+		slot =slot;
+	
+	
+
 	
 	if(ptr->uiFcf != 0x4180)
 		return;
 	 
+	//检测器状态包
 	if(ptr->ucType == SNP_PACKET_TYPE_SEN_STATE || ptr->ucType == SNP_PACKET_TYPE_SEN_UF_STATE)
 	{
-		if((ptr_s_stat->uiSlot & 0x00ff)!= slot && ptr_s_stat->ucVolt !=0)
+		if((ptr_s_stat->uiSlot & 0x00ff)!= slot && ptr_s_stat->ucFilterFlag !=0)
 			return;
 	}
+	//事件包
 	if(ptr->ucType == SNP_PACKET_TYPE_EVENT)
 	{
 		if((ptr_s_event->slot & 0x00ff) != slot)
 			return;
 	}	
+	//rp状态包
 	if(ptr->ucType == SNP_PACKET_TYPE_RP_STATE || ptr->ucType == SNP_PACKET_TYPE_RP_UF_STATE)
 	{
 		if((ptr_rp_stat->uiSlot & 0x00ff) != slot && ptr_rp_stat->reserve != 0)
@@ -522,8 +533,11 @@ void rf_rx_data_handle(int index)
 
 		if(check_recode_data_if_repeat(ptr->uiDevId,ptr->ucSerNr)==0)
 		{
-			sprintf(gprs_debug_buff,"receive_rf_data:id=%04X type=%d syn=%d s=%d slot=%d\r\n",ptr->uiDevId,ptr->ucType,ptr->ucSerNr,systerm_info.slot/get_slot_num(),systerm_info.slot%get_slot_num());
-			debug_uart_send_string(gprs_debug_buff);			
+			if(enable_print_sensor_event > 0)
+			{
+				sprintf(gprs_debug_buff,"receive_rf_data:id=%04X type=%d syn=%d s=%d slot=%d\r\n",ptr->uiDevId,ptr->ucType,ptr->ucSerNr,systerm_info.slot/get_slot_num(),systerm_info.slot%get_slot_num());
+				debug_uart_send_string(gprs_debug_buff);	
+			}				
 			make_data_to_n1(index);
 			make_ack(ptr->ucSerNr);
 			
@@ -534,8 +548,8 @@ void rf_rx_data_handle(int index)
 				get_s_rp_input_update_stat(ptr->uiDevId,ptr_s_stat->uiSubData);
 			if(ptr->ucType == SNP_PACKET_TYPE_RP_UF_STATE )
 				get_s_rp_input_update_stat(ptr->uiDevId,ptr_rp_stat->uiSubData);
-			
-/*			if(ptr->uiDevId == 0x0273)
+/*			
+			if(ptr->uiDevId == 0x0273)
 			{
 				if((ptr_rp_stat->uiSlot & 0x00ff)  != 0x17 || ptr_rp_stat->uiGrade != 1){
 				sensor_rp_param.ParaFram.uiPoll = 0x0273;
@@ -564,7 +578,7 @@ void rf_rx_data_handle(int index)
 				sensor_rp_param.ParaFram.paraB.uimySlot = 0xb;
 				sensor_rp_param.ParaFram.paraB.uiSlotStateE = 0;
 				}
-			}*/
+			}
 			if(ptr->uiDevId == 0x3412)
 			{
 				if((ptr_rp_stat->uiSlot & 0x00ff)  != 15 || ptr_rp_stat->uiGrade != 1){
@@ -575,12 +589,12 @@ void rf_rx_data_handle(int index)
 				sensor_rp_param.ParaFram.uiSlotStateM = 0X02AA;
 				sensor_rp_param.ParaFram.uiSlotStateH = 0;
 				sensor_rp_param.ParaFram.paraA.uiGrade = 1;
-				sensor_rp_param.ParaFram.paraA.uiChannel = 18;
+				sensor_rp_param.ParaFram.paraA.uiChannel = 21;
 				sensor_rp_param.ParaFram.paraB.uimySlot = 15;
 				sensor_rp_param.ParaFram.paraB.uiSlotStateE = 0;
 				}
 			}	
-			/*if(ptr->uiDevId == 0x3422)
+			if(ptr->uiDevId == 0x3422)
 			{
 				if((ptr_rp_stat->uiSlot & 0x00ff)  != 15 || ptr_rp_stat->uiGrade != 1){
 				sensor_rp_param.ParaFram.uiPoll = 0x3422;
@@ -804,7 +818,7 @@ void rf_rx_data_handle(int index)
 				sensor_rp_param.ParaFram.paraB.uimySlot = 20;
 				sensor_rp_param.ParaFram.paraB.uiSlotStateE = 0;
 				}
-			}	*/			
+			}	*/	
 		}
 	}
 }
@@ -917,9 +931,55 @@ void ApPacketsetting(u16_t uiCurSlotNr,u8_t ucCurPacketerNr)
 }
 
 
+struct _test_1000p_manage
+{
+	unsigned int last_test_packet_time;
+	unsigned int rev_packet_count;
+	signed int rssi;
+}test_1000p_manage;
 
 
+extern uint8_t rf_send_1000_p_enable;
+void rf_rev_1000p_test(int index)
+{
+	
+	uint32_t *packet_seq = (uint32_t *)&rf_rx_buff[index][1];	
+	
+	if(rf_send_1000_p_enable == 0)
+		return;
+	
+	if(rf_send_1000_p_enable & (1<<index))
+	{
+		if(rf_rx_buff[index][0] == 15 && rf_rx_buff[index][5] == 5 && rf_rx_buff[index][6] == 6)
+		{
+			test_1000p_manage.rev_packet_count++;
+			test_1000p_manage.rssi += (signed int)(rf_rx_buff[index][14] - 76);
+			test_1000p_manage.last_test_packet_time = systerm_info.slot;
+			sprintf(gprs_debug_buff,"rx_1000p_rf%d: rev=%d packet_seq=%d rssi=%d\r\n",index+1,test_1000p_manage.rev_packet_count,*packet_seq,(signed char)(rf_rx_buff[index][14] - 76));
+			debug_uart_send_string(gprs_debug_buff);				
+		}
+		
+	}
+	
 
+}
+
+void make_result_test_1000p()
+{
+	if(test_1000p_manage.last_test_packet_time == 0)
+		return;
+	
+	if(test_1000p_manage.last_test_packet_time && systerm_info.slot-test_1000p_manage.last_test_packet_time>1024)
+	{
+		sprintf(gprs_debug_buff,"test_1000p_result:rev=%d,right=%f%% rssi=%d\r\n",test_1000p_manage.rev_packet_count,(float)(test_1000p_manage.rev_packet_count)/(float)10,test_1000p_manage.rssi/(int)test_1000p_manage.rev_packet_count);
+		debug_uart_send_string(gprs_debug_buff);		
+		test_1000p_manage.last_test_packet_time = 0;
+		test_1000p_manage.rev_packet_count = 0;
+		test_1000p_manage.rssi = 0;
+		
+	}
+	
+}
 
 
 

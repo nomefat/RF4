@@ -1,10 +1,10 @@
 #ifndef _RF_HAL_H_
 #define _RF_HAL_H_
 
+#include "stm32f4xx_hal.h"
 
-
-
-
+//定义射频模块默认处于正常工作  单载波 调制波 或者 空闲状态
+#define RF_DEFAULT_MODE RF_WORK
 
 
 
@@ -12,6 +12,13 @@
 #define RF2 &hspi1
 #define RF3 &hspi5
 #define RF4 &hspi3
+
+
+
+#define EN_RF1 (1<<0)
+#define EN_RF2 (1<<1)
+#define EN_RF3 (1<<2)
+#define EN_RF4 (1<<3)
 
 
 #define RF_WORK                         0
@@ -39,13 +46,20 @@ typedef struct _rf_stat
 	unsigned char mode;
 }struct_rf_stat;
 
+typedef struct _test_1000p_data
+{
+	uint8_t len;
+	uint32_t head;
+	uint16_t pakcet_count;
+	uint16_t packet_seq;
+	uint8_t data[16];
+}struct_test_1000p_data;
 
 
-
-
+void rf_satt_init();
 void rf_io_tx_4();
 
-
+void rf_scan_channel();
 
 
 
