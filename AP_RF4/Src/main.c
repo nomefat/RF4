@@ -9,7 +9,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -127,7 +127,7 @@ static void MX_SPI1_Init(void);
 static void MX_SPI4_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_USART6_UART_Init(void);
-void MX_I2C1_Init(void);
+static void MX_I2C1_Init(void);
 static void MX_CRC_Init(void);
 static void MX_TIM2_Init(void);
 
@@ -139,8 +139,7 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 HAL_StatusTypeDef iic_stat;
 /* USER CODE END 0 */
-	FLASH_EraseInitTypeDef EraseInit;
-	uint32_t SectorError	;	
+
 int main(void)
 {
 
@@ -177,32 +176,11 @@ int32_t delay;
   MX_I2C1_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
-		
-	init_ap_param();
-	read_ap_param_flash();
-	rf_satt_init();
 
-	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);      //启动systick 2ms中断
-	HAL_SYSTICK_Config(328125);
-	HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);	
-	
-	core_freq = HAL_RCC_GetSysClockFreq();
-	
-	start_from_n1_dma_receive();
-	start_from_gprs_dma_receive();
-	start_from_debug_dma_receive();
-	
-	led_1_close();
-	HAL_TIM_Base_Start(&htim2);
+  /* USER CODE BEGIN 2 */
 
-	systerm_info.enable_rf = 1;   //使能2ms中断中rf发送包
   /* USER CODE END 2 */
-			
-	read_firmware_rp_head();
-	read_firmware_sensor_head();
 
-	print_version();
-	
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -259,7 +237,7 @@ void SystemClock_Config(void)
     /**Initializes the CPU, AHB and APB busses clocks 
     */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 26;
@@ -310,11 +288,11 @@ static void MX_CRC_Init(void)
 }
 
 /* I2C1 init function */
-void MX_I2C1_Init(void)
+static void MX_I2C1_Init(void)
 {
 
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 1000000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -660,14 +638,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SPI3_rf_power_onoff_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC14 PC15 PC0 PC1 
-                           PC2 PC3 PC8 PC9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_0|GPIO_PIN_1 
-                          |GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_8|GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
   /*Configure GPIO pins : SPI5_rf_io_reset_Pin SPI5_rf_io_vreg_Pin SPI5_rf_tx_Pin SPI5_rf_rfoff_Pin 
                            SPI5_rf_io_fifo_Pin SPI5_rf_cs_Pin SPI1_rf_io_fifo_Pin */
   GPIO_InitStruct.Pin = SPI5_rf_io_reset_Pin|SPI5_rf_io_vreg_Pin|SPI5_rf_tx_Pin|SPI5_rf_rfoff_Pin 
@@ -689,6 +659,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC0 PC1 PC2 PC3 
+                           PC8 PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
+                          |GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA0 PA1 PA2 PA3 
                            PA8 PA9 PA10 PA11 
